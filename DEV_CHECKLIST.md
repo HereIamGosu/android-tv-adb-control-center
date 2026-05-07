@@ -17,6 +17,8 @@
 | 2026-05-07 20:25:11 +03:00 | Начата публикация в GitHub remote | Пользователь указал `git@github.com:HereIamGosu/android-tv-adb-control-center.git`; локальный каталог ещё не был git-репозиторием | `DEV_CHECKLIST.md`, весь текущий каркас проекта | `git status`, `git remote -v`, `git log` | До инициализации команды вернули `not a git repository` |
 | 2026-05-07 20:26:00 +03:00 | Добавлен `.gitignore` перед первым коммитом | Нужно не публиковать generated-файлы Python/pytest/venv | `.gitignore`, `.pytest_cache/` | `Get-ChildItem -Force` | `.pytest_cache` обнаружен и исключён из git |
 | 2026-05-07 20:28:00 +03:00 | Проверено состояние перед первым коммитом | Нужно подтвердить, что в коммит попадут только исходники, тесты, README, requirements и DEV_CHECKLIST | весь проект | `python -m pytest`; offscreen `MainWindow()`; `git status --short --ignored` | 12 тестов прошли; окно создаётся; `DEV_CHECKLIST.md` не игнорируется |
+| 2026-05-07 20:31:00 +03:00 | Создан первый git commit и настроен `origin` | Нужно подготовить проект к публикации в репозиторий пользователя | весь проект | `git add -A`; `git commit -m "Initial ADB TV Control Center MVP"`; `git remote -v` | Коммит `eeb0270`; remote `git@github.com:HereIamGosu/android-tv-adb-control-center.git` |
+| 2026-05-07 20:32:00 +03:00 | Выполнена попытка `git push -u origin main` | Пользователь указал push-команду для публикации | локальный `main`, remote `origin` | `git push -u origin main` | Ошибка: `git@github.com: Permission denied (publickey)`; нужен SSH-доступ к GitHub или HTTPS remote |
 
 ## Current Task
 
@@ -39,6 +41,7 @@
 | JS tests | `npx jest --runInBand --no-coverage` | Not applicable | Нет Jest config; проект Python |
 | Build | `npm run build` | Not applicable | Нет `package.json`; проект Python |
 | Manual ADB | Pair/connect/scrcpy/APK/screenshot/keyevents на Android TV | Not run | Требуются `adb.exe`, `scrcpy.exe` и устройство |
+| Publish | `git push -u origin main` | Failed | GitHub SSH auth: `Permission denied (publickey)` |
 
 ## Changelog
 
