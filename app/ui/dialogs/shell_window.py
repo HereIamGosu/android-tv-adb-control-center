@@ -25,10 +25,32 @@ DANGEROUS_PATTERNS = (
     "su",
 )
 
+TEXT = {
+    "en": {
+        "run": "Run",
+        "danger_title": "Potentially dangerous command",
+        "danger_text": "This command can change or damage the device. Run it?",
+        "interpretation": "interpretation",
+    },
+    "ru": {
+        "run": "Выполнить",
+        "danger_title": "Потенциально опасная команда",
+        "danger_text": "Команда может изменить или повредить устройство. Выполнить её?",
+        "interpretation": "пояснение",
+    },
+}
+
 
 class ShellWindow(QWidget):
-    def __init__(self, adb_runner: ADBRunner, serial: str, parent=None):
+    def __init__(
+        self,
+        adb_runner: ADBRunner,
+        serial: str,
+        language: str = "en",
+        parent=None,
+    ):
         super().__init__(parent)
+        self.language = language if language in TEXT else "en"
         self.setWindowTitle(f"ADB Shell - {serial}")
         self.adb_runner = adb_runner
         self.serial = serial
@@ -36,7 +58,7 @@ class ShellWindow(QWidget):
         self.output_edit = QPlainTextEdit()
         self.output_edit.setReadOnly(True)
 
-        run_button = QPushButton("Run")
+        run_button = QPushButton(self._t("run"))
         run_button.clicked.connect(self._run_command)
 
         top = QHBoxLayout()
@@ -55,8 +77,8 @@ class ShellWindow(QWidget):
         if any(pattern in lowered for pattern in DANGEROUS_PATTERNS):
             answer = QMessageBox.warning(
                 self,
-                "Potentially dangerous command",
-                "Команда может изменить или повредить устройство. Выполнить её?",
+                self._t("danger_title"),
+                self._t("danger_text"),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
             if answer != QMessageBox.StandardButton.Yes:
@@ -68,5 +90,8 @@ class ShellWindow(QWidget):
             self.output_edit.appendPlainText(f"stderr:\n{result.stderr}")
         if result.interpretation:
             self.output_edit.appendPlainText(
-                f"interpretation:\n{result.interpretation}"
+                f"{self._t('interpretation')}:\n{result.interpretation}"
             )
+
+    def _t(self, key: str) -> str:
+        return TEXT[self.language][key]

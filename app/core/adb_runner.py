@@ -32,9 +32,9 @@ def parse_adb_devices(output: str) -> list[DeviceEntry]:
 
 
 class ADBRunner:
-    def __init__(self, adb_path: Path):
+    def __init__(self, adb_path: Path, language: str = "ru"):
         self.adb_path = adb_path
-        self.interpreter = CommandInterpreter()
+        self.interpreter = CommandInterpreter(language)
 
     def version(self) -> CommandResult:
         return self._run(["version"])

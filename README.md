@@ -9,7 +9,7 @@
 [![Windows](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D4?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
 [![ADB](https://img.shields.io/badge/ADB-Platform%20Tools-3DDC84?logo=android&logoColor=white)](https://developer.android.com/tools/adb)
 [![scrcpy](https://img.shields.io/badge/scrcpy-supported-111111)](https://github.com/Genymobile/scrcpy)
-[![Tests](https://img.shields.io/badge/tests-pytest-0A7BBB)](https://docs.pytest.org/)
+[![Languages](https://img.shields.io/badge/UI-English%20%7C%20Russian-6A5ACD)](#features)
 
 **Android TV ADB GUI** · **Google TV Wireless Debugging Tool** · **scrcpy launcher for TV** · **APK installer for Android TV**
 
@@ -53,6 +53,7 @@ The project is built for people who manage or debug:
 - **Simple ADB shell window** with warnings for potentially destructive commands.
 - **Human-readable diagnostics** for `protocol fault`, `failed to connect`, `unauthorized`, `device offline`, `more than one device/emulator`, and APK install failures.
 - **Local-first design**: settings and device profiles are stored as local JSON.
+- **Bilingual UI**: switch between English and Russian from the main window.
 
 ## Screenshot
 
@@ -111,12 +112,6 @@ Run the app:
 
 ```powershell
 python -m app.main
-```
-
-Run tests:
-
-```powershell
-python -m pytest
 ```
 
 ## Requirements
@@ -364,10 +359,8 @@ app/
     main_window.py
     dialogs/
     widgets/
-tests/
 README.md
 requirements.txt
-DEV_CHECKLIST.md
 ```
 
 ## Development
@@ -378,16 +371,10 @@ Install dependencies:
 python -m pip install -r requirements.txt
 ```
 
-Run tests:
-
-```powershell
-python -m pytest
-```
-
 Compile-check Python modules:
 
 ```powershell
-python -m compileall app tests
+python -m compileall app
 ```
 
 Construct the main window without opening a normal GUI session:
@@ -444,7 +431,7 @@ Search phrases this project is designed to match:
 - Screenshot preview.
 - Better multi-device selector.
 - Optional dark theme.
-- CI workflow for tests.
+- Packaged smoke-check workflow for Windows builds.
 
 ## Star History
 

@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QPlainTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -94,6 +93,11 @@ TRANSLATIONS = {
         ),
         "install_confirm": "Install APK on the selected device?\n{path}",
         "logcat_stub": "Logcat is still a stub button in this MVP build.",
+        "ready": "Ready",
+        "connected": "Connected",
+        "offline": "Offline",
+        "unauthorized": "Unauthorized",
+        "error": "Error",
     },
     "ru": {
         "window_title": "ADB TV Control Center",
@@ -150,6 +154,11 @@ TRANSLATIONS = {
         ),
         "install_confirm": "Установить APK на выбранное устройство?\n{path}",
         "logcat_stub": "Logcat пока оставлен stub-кнопкой в MVP.",
+        "ready": "Готово",
+        "connected": "Подключено",
+        "offline": "Offline",
+        "unauthorized": "Unauthorized",
+        "error": "Ошибка",
     },
 }
 
@@ -213,13 +222,13 @@ class MainWindow(QMainWindow):
         left_column.addStretch()
 
         right_column.addWidget(self._build_device_actions_group())
-        self.remote_widget = RemoteControlWidget()
+        self.remote_widget = RemoteControlWidget(self.settings.language)
         self.remote_widget.keyevent_requested.connect(self._send_keyevent)
         self.remote_group = QGroupBox()
         remote_layout = QVBoxLayout(self.remote_group)
         remote_layout.addWidget(self.remote_widget)
         right_column.addWidget(self.remote_group)
-        self.log_widget = CommandLogWidget()
+        self.log_widget = CommandLogWidget(self.settings.language)
         self.log_group = QGroupBox()
         log_layout = QVBoxLayout(self.log_group)
         log_layout.addWidget(self.log_widget)
@@ -277,7 +286,7 @@ class MainWindow(QMainWindow):
         self.pair_port_edit.setPlaceholderText("Example: 39631")
         self.connect_port_edit = QLineEdit()
         self.connect_port_edit.setPlaceholderText("Usually different from pair-port")
-        self.device_status = DeviceStatusWidget()
+        self.device_status = DeviceStatusWidget(self.settings.language)
         self.profile_title_label = QLabel()
         self.ip_title_label = QLabel()
         self.pair_port_title_label = QLabel()
@@ -398,7 +407,7 @@ class MainWindow(QMainWindow):
         self.serial_combo.clear()
         if profile.last_serial:
             self.serial_combo.addItem(profile.last_serial)
-        self.device_status.set_status("Ready", self.current_serial)
+        self.device_status.set_status(self._status("ready"), self.current_serial)
         self.settings.last_device_profile_id = profile.id
         self._save()
         self._apply_enabled_state()
@@ -409,7 +418,7 @@ class MainWindow(QMainWindow):
         self._apply_enabled_state()
 
     def _open_settings(self) -> None:
-        dialog = SettingsDialog(self.settings, self)
+        dialog = SettingsDialog(self.settings, self.settings.language, self)
         if dialog.exec():
             previous_last_profile = self.settings.last_device_profile_id
             previous_language = self.settings.language
@@ -422,7 +431,7 @@ class MainWindow(QMainWindow):
             self._apply_enabled_state()
 
     def _add_profile(self) -> None:
-        dialog = DeviceProfileDialog(parent=self)
+        dialog = DeviceProfileDialog(language=self.settings.language, parent=self)
         if dialog.exec():
             self.profiles.append(dialog.device_profile())
             self._save()
@@ -433,17 +442,17 @@ class MainWindow(QMainWindow):
         if not profile:
             QMessageBox.warning(self, self._t("profile"), self._t("profile_missing"))
             return
-        dialog = DeviceProfileDialog(profile, self)
+        dialog = DeviceProfileDialog(profile, self.settings.language, self)
         if dialog.exec():
             self.profiles[self.profile_combo.currentIndex()] = dialog.device_profile()
             self._save()
             self._load_profiles()
 
     def _adb_runner(self) -> ADBRunner:
-        return ADBRunner(Path(self.settings.adb_path))
+        return ADBRunner(Path(self.settings.adb_path), self.settings.language)
 
     def _scrcpy_runner(self) -> ScrcpyRunner:
-        return ScrcpyRunner(Path(self.settings.scrcpy_path))
+        return ScrcpyRunner(Path(self.settings.scrcpy_path), self.settings.language)
 
     def _check_tools(self) -> None:
         self._run_worker(
@@ -560,7 +569,7 @@ class MainWindow(QMainWindow):
         serial = self._validated_serial()
         if not serial:
             return
-        window = ShellWindow(self._adb_runner(), serial, self)
+        window = ShellWindow(self._adb_runner(), serial, self.settings.language, self)
         self.shell_windows.append(window)
         window.resize(760, 420)
         window.show()
@@ -627,10 +636,10 @@ class MainWindow(QMainWindow):
             if profile:
                 profile.last_serial = serial
                 self._save()
-            self.device_status.set_status("Connected", serial)
+            self.device_status.set_status(self._status("connected"), serial)
         else:
             self.device_connected = False
-            self.device_status.set_status("Error", serial)
+            self.device_status.set_status(self._status("error"), serial)
             QMessageBox.warning(
                 self,
                 self._t("device_not_connected_title"),
@@ -641,7 +650,7 @@ class MainWindow(QMainWindow):
     def _after_disconnect(self, result: CommandResult) -> None:
         self._show_result(result)
         self.device_connected = False
-        self.device_status.set_status("Ready", self.current_serial)
+        self.device_status.set_status(self._status("ready"), self.current_serial)
         self._apply_enabled_state()
 
     def _after_devices(self, result: CommandResult) -> None:
@@ -665,16 +674,16 @@ class MainWindow(QMainWindow):
         states = {entry.serial: entry.state for entry in entries}
         if self.current_serial and states.get(self.current_serial) == "device":
             self.device_connected = True
-            self.device_status.set_status("Connected", self.current_serial)
+            self.device_status.set_status(self._status("connected"), self.current_serial)
         elif self.current_serial and states.get(self.current_serial) == "offline":
             self.device_connected = False
-            self.device_status.set_status("Offline", self.current_serial)
+            self.device_status.set_status(self._status("offline"), self.current_serial)
         elif self.current_serial and states.get(self.current_serial) == "unauthorized":
             self.device_connected = False
-            self.device_status.set_status("Unauthorized", self.current_serial)
+            self.device_status.set_status(self._status("unauthorized"), self.current_serial)
         else:
             self.device_connected = False
-            self.device_status.set_status("Ready", self.current_serial)
+            self.device_status.set_status(self._status("ready"), self.current_serial)
         self._apply_enabled_state()
 
     def _show_device_info(
@@ -806,8 +815,14 @@ class MainWindow(QMainWindow):
         self.shell_button.setText(self._t("open_shell"))
         self.logcat_button.setText(self._t("start_logcat"))
 
+        self.remote_widget.set_language(self.settings.language)
         self.remote_group.setTitle(self._t("remote_control"))
+        self.device_status.set_language(self.settings.language)
+        self.log_widget.set_language(self.settings.language)
         self.log_group.setTitle(self._t("command_log"))
+
+    def _status(self, key: str) -> str:
+        return self._t(key)
 
     def _field_with_hint(self, field: QWidget, hint: QLabel | str) -> QWidget:
         container = QWidget()

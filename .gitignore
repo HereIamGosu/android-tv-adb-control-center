@@ -1,10 +1,45 @@
+# Local project process files
+DEV_CHECKLIST.md
+
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
+*$py.class
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.pyre/
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtual environments
 .venv/
 venv/
+env/
+ENV/
+
+# Build and packaging outputs
 build/
 dist/
 *.egg-info/
+*.egg
+
+# PyInstaller / desktop packaging
+*.spec
+
+# Local runtime data
+config/settings.json
+settings.json
+screenshots/
+logs/
+*.log
+
+# IDE and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+Desktop.ini
+.DS_Store

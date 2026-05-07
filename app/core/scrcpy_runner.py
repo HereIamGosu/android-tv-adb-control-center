@@ -10,9 +10,9 @@ from app.core.command_result import CommandResult
 
 
 class ScrcpyRunner:
-    def __init__(self, scrcpy_path: Path):
+    def __init__(self, scrcpy_path: Path, language: str = "ru"):
         self.scrcpy_path = scrcpy_path
-        self.interpreter = CommandInterpreter()
+        self.interpreter = CommandInterpreter(language)
 
     def version(self) -> CommandResult:
         return self._run(["--version"])
