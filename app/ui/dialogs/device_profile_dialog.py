@@ -7,10 +7,12 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
     QVBoxLayout,
+    QWidget,
 )
 
 from app.core.device_profile import DeviceProfile
@@ -24,12 +26,15 @@ class DeviceProfileDialog(QDialog):
         self.profile = profile
         self.name_edit = QLineEdit(profile.name if profile else "")
         self.ip_edit = QLineEdit(profile.ip if profile else "")
+        self.ip_edit.setPlaceholderText("Example: 192.168.1.113")
         self.pair_port_edit = QLineEdit(
             str(profile.pair_port) if profile and profile.pair_port else ""
         )
+        self.pair_port_edit.setPlaceholderText("Port from pairing-code dialog")
         self.connect_port_edit = QLineEdit(
             str(profile.connect_port) if profile and profile.connect_port else ""
         )
+        self.connect_port_edit.setPlaceholderText("Port from main Wireless Debugging screen")
         self.scrcpy_args_edit = QLineEdit(profile.scrcpy_args if profile else "")
         self.screenshot_dir_edit = QLineEdit(
             profile.screenshot_dir
@@ -39,9 +44,27 @@ class DeviceProfileDialog(QDialog):
 
         form = QFormLayout()
         form.addRow("Name", self.name_edit)
-        form.addRow("IP / hostname", self.ip_edit)
-        form.addRow("Pair port", self.pair_port_edit)
-        form.addRow("Connect port", self.connect_port_edit)
+        form.addRow(
+            "IP / hostname",
+            self._field_with_hint(
+                self.ip_edit,
+                "Enter only the IP part. If TV shows 192.168.1.113:39631, enter 192.168.1.113.",
+            ),
+        )
+        form.addRow(
+            "Pair port",
+            self._field_with_hint(
+                self.pair_port_edit,
+                "Use the port from 'Pair device with pairing code'. The 6-digit code is entered later after pressing Pair.",
+            ),
+        )
+        form.addRow(
+            "Connect port",
+            self._field_with_hint(
+                self.connect_port_edit,
+                "Use the port from the main Wireless Debugging screen. It is often different from the pair-port.",
+            ),
+        )
         form.addRow("scrcpy args", self.scrcpy_args_edit)
         form.addRow("Screenshot dir", self._dir_row())
 
@@ -102,6 +125,17 @@ class DeviceProfileDialog(QDialog):
         path = QFileDialog.getExistingDirectory(self, "Select screenshot folder")
         if path:
             self.screenshot_dir_edit.setText(path)
+
+    def _field_with_hint(self, field: QLineEdit, hint: str) -> QWidget:
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(field)
+        label = QLabel(hint)
+        label.setWordWrap(True)
+        label.setStyleSheet("color: #555;")
+        layout.addWidget(label)
+        return container
 
     def _validate_and_accept(self) -> None:
         if not self.name_edit.text().strip():

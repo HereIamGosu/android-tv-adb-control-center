@@ -19,6 +19,11 @@
 | 2026-05-07 20:28:00 +03:00 | Проверено состояние перед первым коммитом | Нужно подтвердить, что в коммит попадут только исходники, тесты, README, requirements и DEV_CHECKLIST | весь проект | `python -m pytest`; offscreen `MainWindow()`; `git status --short --ignored` | 12 тестов прошли; окно создаётся; `DEV_CHECKLIST.md` не игнорируется |
 | 2026-05-07 20:31:00 +03:00 | Создан первый git commit и настроен `origin` | Нужно подготовить проект к публикации в репозиторий пользователя | весь проект | `git add -A`; `git commit -m "Initial ADB TV Control Center MVP"`; `git remote -v` | Коммит `eeb0270`; remote `git@github.com:HereIamGosu/android-tv-adb-control-center.git` |
 | 2026-05-07 20:32:00 +03:00 | Выполнена попытка `git push -u origin main` | Пользователь указал push-команду для публикации | локальный `main`, remote `origin` | `git push -u origin main` | Ошибка: `git@github.com: Permission denied (publickey)`; нужен SSH-доступ к GitHub или HTTPS remote |
+| 2026-05-07 20:31:45 +03:00 | Начата переработка README для GitHub продвижения | Пользователь запросил README уровня популярных репозиториев, SEO и Star History | `README.md`, `DEV_CHECKLIST.md` | Просмотр текущего README; анализ README популярных проектов и GitHub docs | Решение: англоязычный README с badges, quick start, SEO-keywords, troubleshooting, roadmap, Star History |
+| 2026-05-07 20:36:00 +03:00 | README переписан для GitHub discovery | Нужно повысить понятность, поисковую релевантность и конверсию в stars | `README.md` | `python -m pytest`; `Select-String` по Star History и SEO секциям | 12 тестов прошли; Star History указывает на `HereIamGosu/android-tv-adb-control-center` |
+| 2026-05-07 20:38:00 +03:00 | Проверен и удалён некачественный generated screenshot | Offscreen Qt отрисовал текст квадратами; такой asset ухудшил бы README | `docs/assets/android-tv-adb-control-center-main.png` | `view_image`; безопасное удаление внутри workspace | PNG удалён; README оставляет путь для будущего нормального Windows screenshot |
+| 2026-05-07 20:41:36 +03:00 | Начата UX-правка подключения | Пользователь не понимает, что вводить и что происходит при подключении | `app/ui/main_window.py`, `app/ui/dialogs/device_profile_dialog.py`, `DEV_CHECKLIST.md` | Анализ текущего GUI | Нужно добавить подсказки рядом с IP/pair/connect полями и видимый статус выполняемой операции |
+| 2026-05-07 20:48:00 +03:00 | Добавлены подсказки и статус операций в GUI | Нужно сделать подключение понятным и приложение визуально отзывчивым | `app/ui/main_window.py`, `app/ui/dialogs/device_profile_dialog.py` | `python -m compileall app tests`; `python -m pytest`; offscreen `MainWindow()`; offscreen `DeviceProfileDialog()` | 12 тестов прошли; compileall прошёл; окно и диалог создаются; `__pycache__` удалён |
 
 ## Current Task
 
@@ -26,7 +31,7 @@
 |---|---|
 | Задача | Создать MVP-каркас Windows-first приложения `ADB TV Control Center` на Python/PySide6 |
 | Источник требования | Спецификация пользователя `ADB TV Control Center`, версия документа `0.1` |
-| Статус | Завершено |
+| Статус | Завершено: UX-подсказки подключения |
 | Риски | GUI и реальные ADB/scrcpy сценарии нельзя полноценно проверить без Windows GUI-сессии, установленных инструментов и Android TV-устройства |
 | Definition of Done | Созданы структура, core-модули, минимальный GUI, README, requirements, unit-тесты; запущены доступные проверки; ограничения проверки зафиксированы |
 
@@ -42,6 +47,8 @@
 | Build | `npm run build` | Not applicable | Нет `package.json`; проект Python |
 | Manual ADB | Pair/connect/scrcpy/APK/screenshot/keyevents на Android TV | Not run | Требуются `adb.exe`, `scrcpy.exe` и устройство |
 | Publish | `git push -u origin main` | Failed | GitHub SSH auth: `Permission denied (publickey)` |
+| README SEO | Проверка Star History / SEO секций через `Select-String` | Passed | Ссылки используют `HereIamGosu/android-tv-adb-control-center` |
+| UI hints | Offscreen construction: `MainWindow()` и `DeviceProfileDialog()` | Passed | Проверяет новые подсказки и layouts без запуска event loop |
 
 ## Changelog
 
@@ -62,6 +69,9 @@
 - Unit-тесты validators, command_interpreter, settings_store и `adb devices -l` parser.
 
 #### Changed
+
+- README переписан на английском языке под GitHub discovery: badges, quick start, features, troubleshooting, security model, SEO topics, roadmap, Star History.
+- В GUI добавлены подсказки рядом с IP, pair-port, connect-port и serial, блок `How to connect`, а также строка `Current operation` на время ADB/scrcpy-команд.
 
 #### Fixed
 

@@ -69,6 +69,7 @@ class MainWindow(QMainWindow):
         self.thread_pool = QThreadPool.globalInstance()
         self.current_serial: str | None = None
         self.device_connected = False
+        self.operation_running = False
         self.shell_windows: list[ShellWindow] = []
 
         self._build_ui()
@@ -84,6 +85,7 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(self._build_tool_status_group())
         layout.addWidget(self._build_profile_group())
+        layout.addWidget(self._build_connection_help_group())
         layout.addWidget(self._build_connection_group())
         layout.addWidget(self._build_device_actions_group())
         self.remote_widget = RemoteControlWidget()
@@ -103,6 +105,7 @@ class MainWindow(QMainWindow):
         layout = QFormLayout(group)
         self.adb_path_label = QLabel(self.settings.adb_path or "-")
         self.scrcpy_path_label = QLabel(self.settings.scrcpy_path or "-")
+        self.operation_label = QLabel("Idle")
         settings_button = QPushButton("Settings")
         settings_button.clicked.connect(self._open_settings)
         check_tools_button = QPushButton("Check tools")
@@ -113,6 +116,7 @@ class MainWindow(QMainWindow):
         row.addStretch()
         layout.addRow("adb.exe", self.adb_path_label)
         layout.addRow("scrcpy.exe", self.scrcpy_path_label)
+        layout.addRow("Current operation", self.operation_label)
         layout.addRow(row)
         return group
 
@@ -132,16 +136,56 @@ class MainWindow(QMainWindow):
         buttons.addWidget(edit_button)
         buttons.addStretch()
         self.ip_edit = QLineEdit()
+        self.ip_edit.setPlaceholderText("Example: 192.168.1.113")
         self.pair_port_edit = QLineEdit()
+        self.pair_port_edit.setPlaceholderText("Example: 39631")
         self.connect_port_edit = QLineEdit()
+        self.connect_port_edit.setPlaceholderText("Usually different from pair-port")
         self.device_status = DeviceStatusWidget()
         layout.addRow("Profile", self.profile_combo)
         layout.addRow(buttons)
-        layout.addRow("IP / hostname", self.ip_edit)
-        layout.addRow("Pair port", self.pair_port_edit)
-        layout.addRow("Connect port", self.connect_port_edit)
-        layout.addRow("Serial", self.serial_combo)
+        layout.addRow(
+            "IP / hostname",
+            self._field_with_hint(
+                self.ip_edit,
+                "Enter only the IP part from TV. If TV shows 192.168.1.113:39631, enter 192.168.1.113 here.",
+            ),
+        )
+        layout.addRow(
+            "Pair port",
+            self._field_with_hint(
+                self.pair_port_edit,
+                "Use the port shown in the 'Pair device with pairing code' dialog on TV. For 192.168.1.113:39631, enter 39631.",
+            ),
+        )
+        layout.addRow(
+            "Connect port",
+            self._field_with_hint(
+                self.connect_port_edit,
+                "Use the port from the main Wireless Debugging screen, usually shown as 'IP address & Port'. It is often NOT the pair-port.",
+            ),
+        )
+        layout.addRow(
+            "Serial",
+            self._field_with_hint(
+                self.serial_combo,
+                "After Connect + Refresh devices this should contain <ip>:<connect-port> with state 'device'.",
+            ),
+        )
         layout.addRow("Status", self.device_status)
+        return group
+
+    def _build_connection_help_group(self) -> QGroupBox:
+        group = QGroupBox("How to connect")
+        layout = QVBoxLayout(group)
+        help_text = QLabel(
+            "1. On TV open Developer Options -> Wireless Debugging.\n"
+            "2. Open 'Pair device with pairing code'. Copy IP and pair-port into IP / Pair port, then press Pair and enter the 6-digit code.\n"
+            "3. Go back to the main Wireless Debugging screen. Copy its 'IP address & Port' port into Connect port, then press Connect.\n"
+            "4. Device actions become available only after adb devices -l reports the selected serial as device."
+        )
+        help_text.setWordWrap(True)
+        layout.addWidget(help_text)
         return group
 
     def _build_connection_group(self) -> QGroupBox:
@@ -282,6 +326,7 @@ class MainWindow(QMainWindow):
         self._run_worker(
             lambda: [self._adb_runner().version(), self._scrcpy_runner().version()],
             self._show_many_results,
+            "Checking adb.exe and scrcpy.exe versions",
         )
 
     def _pair(self) -> None:
@@ -297,6 +342,7 @@ class MainWindow(QMainWindow):
         self._run_worker(
             lambda: self._adb_runner().pair(ip, pair_port, code.strip()),
             self._show_result,
+            f"Pairing {ip}:{pair_port}",
         )
 
     def _connect(self) -> None:
@@ -311,11 +357,11 @@ class MainWindow(QMainWindow):
             devices_result = adb.devices()
             return [connect_result, devices_result]
 
-        self._run_worker(task, self._after_connect)
+        self._run_worker(task, self._after_connect, f"Connecting {ip}:{connect_port}")
 
     def _disconnect(self) -> None:
         self._run_worker(
-            lambda: self._adb_runner().disconnect(), self._after_disconnect
+            lambda: self._adb_runner().disconnect(), self._after_disconnect, "Disconnecting ADB devices"
         )
 
     def _reset_adb(self) -> None:
@@ -328,10 +374,10 @@ class MainWindow(QMainWindow):
                 adb.devices(),
             ]
 
-        self._run_worker(task, self._show_many_results)
+        self._run_worker(task, self._show_many_results, "Resetting ADB server")
 
     def _refresh_devices(self) -> None:
-        self._run_worker(lambda: self._adb_runner().devices(), self._after_devices)
+        self._run_worker(lambda: self._adb_runner().devices(), self._after_devices, "Refreshing adb devices -l")
 
     def _launch_scrcpy(self) -> None:
         serial = self._validated_serial()
@@ -341,6 +387,7 @@ class MainWindow(QMainWindow):
         self._run_worker(
             lambda: self._scrcpy_runner().launch(serial, profile.scrcpy_args),
             self._show_result,
+            f"Launching scrcpy for {serial}",
         )
 
     def _install_apk(self) -> None:
@@ -360,6 +407,7 @@ class MainWindow(QMainWindow):
         self._run_worker(
             lambda: APKInstallService(self._adb_runner()).install(serial, Path(path)),
             self._show_result,
+            f"Installing APK to {serial}",
         )
 
     def _screenshot(self) -> None:
@@ -372,6 +420,7 @@ class MainWindow(QMainWindow):
                 serial, Path(profile.screenshot_dir)
             )[0],
             self._show_result,
+            f"Taking screenshot from {serial}",
         )
 
     def _device_info(self) -> None:
@@ -382,7 +431,7 @@ class MainWindow(QMainWindow):
         def task() -> tuple[dict[str, str], list[CommandResult]]:
             return DeviceInfoService(self._adb_runner()).read(serial)
 
-        self._run_worker(task, self._show_device_info)
+        self._run_worker(task, self._show_device_info, f"Reading device info from {serial}")
 
     def _open_shell(self) -> None:
         serial = self._validated_serial()
@@ -398,7 +447,7 @@ class MainWindow(QMainWindow):
         if not serial:
             return
         self._run_worker(
-            lambda: self._adb_runner().keyevent(serial, keycode), self._show_result
+            lambda: self._adb_runner().keyevent(serial, keycode), self._show_result, f"Sending {keycode}"
         )
 
     def _validated_connection(
@@ -459,6 +508,12 @@ class MainWindow(QMainWindow):
         else:
             self.device_connected = False
             self.device_status.set_status("Error", serial)
+            QMessageBox.warning(
+                self,
+                "Device not connected",
+                "adb connect finished, but adb devices -l did not report the expected serial as device.\n\n"
+                "Check that Connect port is from the main Wireless Debugging screen, not from the pairing-code dialog.",
+            )
         self._apply_enabled_state()
 
     def _after_disconnect(self, result: CommandResult) -> None:
@@ -523,14 +578,30 @@ class MainWindow(QMainWindow):
         self.log_widget.show_result(result)
 
     def _run_worker(
-        self, task: Callable[[], object], on_finished: Callable[[object], None]
+        self,
+        task: Callable[[], object],
+        on_finished: Callable[[object], None],
+        operation_text: str,
     ) -> None:
         worker = CommandWorker(task)
-        worker.signals.finished.connect(on_finished)
-        worker.signals.failed.connect(
-            lambda message: QMessageBox.critical(self, "Error", message)
-        )
+        self.operation_running = True
+        self.operation_label.setText(f"Running: {operation_text}")
+        self._apply_enabled_state()
+        worker.signals.finished.connect(lambda payload: self._finish_worker(payload, on_finished))
+        worker.signals.failed.connect(lambda message: self._fail_worker(message))
         self.thread_pool.start(worker)
+
+    def _finish_worker(self, payload: object, on_finished: Callable[[object], None]) -> None:
+        self.operation_running = False
+        self.operation_label.setText("Idle")
+        on_finished(payload)
+        self._apply_enabled_state()
+
+    def _fail_worker(self, message: str) -> None:
+        self.operation_running = False
+        self.operation_label.setText("Failed")
+        self._apply_enabled_state()
+        QMessageBox.critical(self, "Error", message)
 
     def _apply_enabled_state(self) -> None:
         adb_ready = bool(self.settings.adb_path)
@@ -543,7 +614,7 @@ class MainWindow(QMainWindow):
             self.reset_adb_button,
             self.refresh_devices_button,
         ):
-            button.setEnabled(adb_ready)
+            button.setEnabled(adb_ready and not self.operation_running)
         for button in (
             self.install_apk_button,
             self.screenshot_button,
@@ -551,9 +622,20 @@ class MainWindow(QMainWindow):
             self.shell_button,
             self.logcat_button,
         ):
-            button.setEnabled(adb_ready and can_use_device)
-        self.scrcpy_button.setEnabled(scrcpy_ready and can_use_device)
-        self.remote_widget.set_controls_enabled(adb_ready and can_use_device)
+            button.setEnabled(adb_ready and can_use_device and not self.operation_running)
+        self.scrcpy_button.setEnabled(scrcpy_ready and can_use_device and not self.operation_running)
+        self.remote_widget.set_controls_enabled(adb_ready and can_use_device and not self.operation_running)
 
     def _save(self) -> None:
         self.store.save(self.settings, self.profiles)
+
+    def _field_with_hint(self, field: QWidget, hint: str) -> QWidget:
+        container = QWidget()
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(field)
+        label = QLabel(hint)
+        label.setWordWrap(True)
+        label.setStyleSheet("color: #555;")
+        layout.addWidget(label)
+        return container
