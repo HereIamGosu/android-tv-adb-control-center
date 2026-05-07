@@ -61,7 +61,7 @@ class MainWindow(QMainWindow):
     def __init__(self, store: SettingsStore | None = None):
         super().__init__()
         self.setWindowTitle("ADB TV Control Center")
-        self.resize(1100, 760)
+        self.resize(1280, 760)
         self.store = store or SettingsStore()
         document = self.store.load()
         self.settings = document.settings
@@ -81,24 +81,31 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         root = QWidget()
         self.setCentralWidget(root)
-        layout = QVBoxLayout(root)
+        root_layout = QHBoxLayout(root)
 
-        layout.addWidget(self._build_tool_status_group())
-        layout.addWidget(self._build_profile_group())
-        layout.addWidget(self._build_connection_help_group())
-        layout.addWidget(self._build_connection_group())
-        layout.addWidget(self._build_device_actions_group())
+        left_column = QVBoxLayout()
+        right_column = QVBoxLayout()
+        root_layout.addLayout(left_column, 1)
+        root_layout.addLayout(right_column, 1)
+
+        left_column.addWidget(self._build_tool_status_group())
+        left_column.addWidget(self._build_connection_help_group())
+        left_column.addWidget(self._build_profile_group())
+        left_column.addWidget(self._build_connection_group())
+        left_column.addStretch()
+
+        right_column.addWidget(self._build_device_actions_group())
         self.remote_widget = RemoteControlWidget()
         self.remote_widget.keyevent_requested.connect(self._send_keyevent)
         remote_group = QGroupBox("Remote control")
         remote_layout = QVBoxLayout(remote_group)
         remote_layout.addWidget(self.remote_widget)
-        layout.addWidget(remote_group)
+        right_column.addWidget(remote_group)
         self.log_widget = CommandLogWidget()
         log_group = QGroupBox("Command log")
         log_layout = QVBoxLayout(log_group)
         log_layout.addWidget(self.log_widget)
-        layout.addWidget(log_group)
+        right_column.addWidget(log_group, 1)
 
     def _build_tool_status_group(self) -> QGroupBox:
         group = QGroupBox("Tool status")
@@ -144,32 +151,14 @@ class MainWindow(QMainWindow):
         self.device_status = DeviceStatusWidget()
         layout.addRow("Profile", self.profile_combo)
         layout.addRow(buttons)
-        layout.addRow(
-            "IP / hostname",
-            self._field_with_hint(
-                self.ip_edit,
-                "Enter only the IP part from TV. If TV shows 192.168.1.113:39631, enter 192.168.1.113 here.",
-            ),
-        )
-        layout.addRow(
-            "Pair port",
-            self._field_with_hint(
-                self.pair_port_edit,
-                "Use the port shown in the 'Pair device with pairing code' dialog on TV. For 192.168.1.113:39631, enter 39631.",
-            ),
-        )
-        layout.addRow(
-            "Connect port",
-            self._field_with_hint(
-                self.connect_port_edit,
-                "Use the port from the main Wireless Debugging screen, usually shown as 'IP address & Port'. It is often NOT the pair-port.",
-            ),
-        )
+        layout.addRow("IP / hostname", self.ip_edit)
+        layout.addRow("Pair port", self.pair_port_edit)
+        layout.addRow("Connect port", self.connect_port_edit)
         layout.addRow(
             "Serial",
             self._field_with_hint(
                 self.serial_combo,
-                "After Connect + Refresh devices this should contain <ip>:<connect-port> with state 'device'.",
+                "Filled after Refresh devices. Must be in state device.",
             ),
         )
         layout.addRow("Status", self.device_status)
@@ -179,10 +168,10 @@ class MainWindow(QMainWindow):
         group = QGroupBox("How to connect")
         layout = QVBoxLayout(group)
         help_text = QLabel(
-            "1. On TV open Developer Options -> Wireless Debugging.\n"
-            "2. Open 'Pair device with pairing code'. Copy IP and pair-port into IP / Pair port, then press Pair and enter the 6-digit code.\n"
-            "3. Go back to the main Wireless Debugging screen. Copy its 'IP address & Port' port into Connect port, then press Connect.\n"
-            "4. Device actions become available only after adb devices -l reports the selected serial as device."
+            "IP: enter only the address part, for example 192.168.1.113.\n"
+            "Pair port: take it from 'Pair device with pairing code'. Enter the 6-digit code after pressing Pair.\n"
+            "Connect port: take it from the main Wireless Debugging screen. It is usually different from pair-port.\n"
+            "Actions unlock only when adb devices -l reports the selected serial as device."
         )
         help_text.setWordWrap(True)
         layout.addWidget(help_text)
@@ -633,9 +622,11 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(3)
         layout.addWidget(field)
         label = QLabel(hint)
         label.setWordWrap(True)
+        label.setMaximumHeight(36)
         label.setStyleSheet("color: #555;")
         layout.addWidget(label)
         return container

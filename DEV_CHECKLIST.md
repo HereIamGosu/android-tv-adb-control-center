@@ -25,6 +25,8 @@
 | 2026-05-07 20:41:36 +03:00 | Начата UX-правка подключения | Пользователь не понимает, что вводить и что происходит при подключении | `app/ui/main_window.py`, `app/ui/dialogs/device_profile_dialog.py`, `DEV_CHECKLIST.md` | Анализ текущего GUI | Нужно добавить подсказки рядом с IP/pair/connect полями и видимый статус выполняемой операции |
 | 2026-05-07 20:48:00 +03:00 | Добавлены подсказки и статус операций в GUI | Нужно сделать подключение понятным и приложение визуально отзывчивым | `app/ui/main_window.py`, `app/ui/dialogs/device_profile_dialog.py` | `python -m compileall app tests`; `python -m pytest`; offscreen `MainWindow()`; offscreen `DeviceProfileDialog()` | 12 тестов прошли; compileall прошёл; окно и диалог создаются; `__pycache__` удалён |
 | 2026-05-07 20:50:00 +03:00 | Коммит и push UX-правки | Пользователь попросил всегда делать коммиты и push самостоятельно | `README.md`, `app/ui/main_window.py`, `app/ui/dialogs/device_profile_dialog.py`, `DEV_CHECKLIST.md` | `git commit -m "Improve connection guidance in UI"`; `git push` | Коммит `cb4bd7b` успешно отправлен в `origin/main` |
+| 2026-05-07 20:46:06 +03:00 | Начата переработка GUI в два столбца | Пользователь сообщил, что подсказки не влезают и GUI с артефактами | `app/ui/main_window.py`, `DEV_CHECKLIST.md` | Анализ текущего одноколоночного layout | Нужно разделить левую и правую зоны и ограничить ширину подсказок |
+| 2026-05-07 20:52:00 +03:00 | Главное окно переведено в два столбца | Нужно убрать переполнение подсказок и сделать интерфейс читаемым | `app/ui/main_window.py` | `python -m pytest`; `python -m compileall app tests`; offscreen `MainWindow()` | 12 тестов прошли; compileall прошёл; окно создаётся размером 1280x760; `__pycache__` удалён |
 
 ## Current Task
 
@@ -32,7 +34,7 @@
 |---|---|
 | Задача | Создать MVP-каркас Windows-first приложения `ADB TV Control Center` на Python/PySide6 |
 | Источник требования | Спецификация пользователя `ADB TV Control Center`, версия документа `0.1` |
-| Статус | Завершено: UX-подсказки подключения |
+| Статус | Завершено: двухколоночный GUI |
 | Риски | GUI и реальные ADB/scrcpy сценарии нельзя полноценно проверить без Windows GUI-сессии, установленных инструментов и Android TV-устройства |
 | Definition of Done | Созданы структура, core-модули, минимальный GUI, README, requirements, unit-тесты; запущены доступные проверки; ограничения проверки зафиксированы |
 
@@ -51,6 +53,7 @@
 | Publish | `git push` | Passed | HTTPS remote; `cb4bd7b` отправлен в `origin/main` |
 | README SEO | Проверка Star History / SEO секций через `Select-String` | Passed | Ссылки используют `HereIamGosu/android-tv-adb-control-center` |
 | UI hints | Offscreen construction: `MainWindow()` и `DeviceProfileDialog()` | Passed | Проверяет новые подсказки и layouts без запуска event loop |
+| Two-column GUI | Offscreen construction: `MainWindow()` | Passed | Окно создаётся размером 1280x760 |
 
 ## Changelog
 
@@ -74,6 +77,7 @@
 
 - README переписан на английском языке под GitHub discovery: badges, quick start, features, troubleshooting, security model, SEO topics, roadmap, Star History.
 - В GUI добавлены подсказки рядом с IP, pair-port, connect-port и serial, блок `How to connect`, а также строка `Current operation` на время ADB/scrcpy-команд.
+- Главное окно перестроено из одного вертикального столбца в два столбца: подключение слева, действия/пульт/лог справа.
 
 #### Fixed
 
