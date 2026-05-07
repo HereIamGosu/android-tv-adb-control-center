@@ -462,10 +462,10 @@ class MainWindow(QMainWindow):
         )
 
     def _pair(self) -> None:
-        connection = self._validated_connection(require_pair=True)
-        if not connection:
+        target = self._validated_pair_target()
+        if not target:
             return
-        ip, pair_port, _ = connection
+        ip, pair_port = target
         code, ok = QInputDialog.getText(
             self, self._t("pairing_code_title"), self._t("pairing_code_prompt")
         )
@@ -478,10 +478,10 @@ class MainWindow(QMainWindow):
         )
 
     def _connect(self) -> None:
-        connection = self._validated_connection()
-        if not connection:
+        target = self._validated_connect_target()
+        if not target:
             return
-        ip, _, connect_port = connection
+        ip, connect_port = target
 
         def task() -> list[CommandResult]:
             adb = self._adb_runner()
@@ -582,30 +582,29 @@ class MainWindow(QMainWindow):
             lambda: self._adb_runner().keyevent(serial, keycode), self._show_result, f"Sending {keycode}"
         )
 
-    def _validated_connection(
-        self, require_pair: bool = False
-    ) -> tuple[str, int, int] | None:
+    def _validated_pair_target(self) -> tuple[str, int] | None:
         ip = self.ip_edit.text().strip()
         pair_port = self.pair_port_edit.text().strip()
-        connect_port = self.connect_port_edit.text().strip()
         for is_valid, error in (
             validate_ip_or_host(ip),
             validate_port(pair_port),
+        ):
+            if not is_valid:
+                QMessageBox.warning(self, self._t("invalid_connection"), error)
+                return None
+        return ip, int(pair_port)
+
+    def _validated_connect_target(self) -> tuple[str, int] | None:
+        ip = self.ip_edit.text().strip()
+        connect_port = self.connect_port_edit.text().strip()
+        for is_valid, error in (
+            validate_ip_or_host(ip),
             validate_port(connect_port),
         ):
             if not is_valid:
                 QMessageBox.warning(self, self._t("invalid_connection"), error)
                 return None
-        if require_pair and pair_port == connect_port:
-            answer = QMessageBox.warning(
-                self,
-                self._t("pair_connect_ports"),
-                self._t("same_ports_warning"),
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            )
-            if answer != QMessageBox.StandardButton.Yes:
-                return None
-        return ip, int(pair_port), int(connect_port)
+        return ip, int(connect_port)
 
     def _validated_serial(self, show_message: bool = True) -> str | None:
         serial = self.current_serial or self.serial_combo.currentText().strip()
@@ -620,10 +619,10 @@ class MainWindow(QMainWindow):
         self._show_many_results(results)
         devices_result = results[-1]
         self._update_devices_from_result(devices_result)
-        connection = self._validated_connection()
-        if not connection:
+        target = self._validated_connect_target()
+        if not target:
             return
-        ip, _, connect_port = connection
+        ip, connect_port = target
         serial = f"{ip}:{connect_port}"
         entries = parse_adb_devices(devices_result.stdout)
         connected = any(
