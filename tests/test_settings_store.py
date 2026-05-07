@@ -9,13 +9,19 @@ from app.core.settings_store import SettingsStore
 def test_settings_store_save_and_load(tmp_path: Path) -> None:
     path = tmp_path / "settings.json"
     store = SettingsStore(path)
-    settings = AppSettings(adb_path="C:\\tools\\adb.exe", scrcpy_path="C:\\tools\\scrcpy.exe", default_screenshot_dir="C:\\shots")
+    settings = AppSettings(
+        adb_path="C:\\tools\\adb.exe",
+        scrcpy_path="C:\\tools\\scrcpy.exe",
+        default_screenshot_dir="C:\\shots",
+        language="ru",
+    )
     profile = DeviceProfile.create("Xiaomi TV Stick", "192.168.1.45", 37123, 45678, '--window-title "Xiaomi"', "C:\\shots")
 
     store.save(settings, [profile])
     document = store.load()
 
     assert document.settings.adb_path == settings.adb_path
+    assert document.settings.language == "ru"
     assert document.profiles[0].last_serial == "192.168.1.45:45678"
 
 

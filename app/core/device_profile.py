@@ -69,6 +69,7 @@ class AppSettings:
     scrcpy_path: str = ""
     default_screenshot_dir: str = ""
     theme: str = "system"
+    language: str = "en"
     last_device_profile_id: str | None = None
 
     @classmethod
@@ -78,6 +79,7 @@ class AppSettings:
             scrcpy_path=str(data.get("scrcpy_path", "")),
             default_screenshot_dir=str(data.get("default_screenshot_dir", "")),
             theme=str(data.get("theme", "system")),
+            language=str(data.get("language", "en")),
             last_device_profile_id=data.get("last_device_profile_id"),
         )
 
