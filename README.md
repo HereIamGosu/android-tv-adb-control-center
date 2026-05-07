@@ -184,7 +184,13 @@ Device actions are enabled only when the selected serial is confirmed as `device
 scrcpy -s <serial> <extra-args>
 ```
 
-The app always passes `-s <serial>`, which avoids ambiguous behavior when ADB sees multiple devices.
+The app exposes the scrcpy connection modes documented by scrcpy:
+
+- `scrcpy serial`: runs `scrcpy -s <serial>` for the selected ADB serial.
+- `scrcpy auto`: runs `scrcpy` without a selector, which works when exactly one device is listed by ADB.
+- `scrcpy TCP/IP`: runs `scrcpy --tcpip=<ip>:<connect-port>` for a device already listening over TCP/IP.
+
+Use `scrcpy serial` when multiple devices are connected. Use `scrcpy TCP/IP` for the common Android TV case where the device listens on `192.168.x.x:5555`.
 
 ## Features
 

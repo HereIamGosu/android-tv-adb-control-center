@@ -62,6 +62,7 @@ TRANSLATIONS = {
             "IP: enter only the address part, for example 192.168.1.113.\n"
             "Pair port: take it from 'Pair device with pairing code'. Enter the 6-digit code after pressing Pair.\n"
             "Connect port: take it from the main Wireless Debugging screen. It is usually different from pair-port.\n"
+            "scrcpy TCP/IP can start with --tcpip=IP:ConnectPort even before Refresh devices confirms a serial.\n"
             "Actions unlock only when adb devices -l reports the selected serial as device."
         ),
         "connection_actions": "Connection actions",
@@ -71,7 +72,9 @@ TRANSLATIONS = {
         "reset_adb": "Reset ADB",
         "refresh_devices": "Refresh devices",
         "device_actions": "Device actions",
-        "launch_scrcpy": "Launch scrcpy",
+        "launch_scrcpy": "scrcpy serial",
+        "launch_scrcpy_auto": "scrcpy auto",
+        "launch_scrcpy_tcpip": "scrcpy TCP/IP",
         "install_apk": "Install APK",
         "screenshot": "Screenshot",
         "device_info": "Device Info",
@@ -123,6 +126,7 @@ TRANSLATIONS = {
             "IP: вводи только адрес, например 192.168.1.113.\n"
             "Pair port: бери из окна 'Pair device with pairing code'. 6-значный код вводится после нажатия Pair.\n"
             "Connect port: бери с главного экрана Wireless Debugging. Обычно он отличается от pair-port.\n"
+            "scrcpy TCP/IP запускает --tcpip=IP:ConnectPort даже до подтверждения serial через Refresh devices.\n"
             "Действия станут доступны только когда adb devices -l покажет выбранный serial в состоянии device."
         ),
         "connection_actions": "Подключение",
@@ -132,7 +136,9 @@ TRANSLATIONS = {
         "reset_adb": "Сброс ADB",
         "refresh_devices": "Обновить devices",
         "device_actions": "Действия",
-        "launch_scrcpy": "Запустить scrcpy",
+        "launch_scrcpy": "scrcpy serial",
+        "launch_scrcpy_auto": "scrcpy auto",
+        "launch_scrcpy_tcpip": "scrcpy TCP/IP",
         "install_apk": "Установить APK",
         "screenshot": "Скриншот",
         "device_info": "Информация",
@@ -346,12 +352,16 @@ class MainWindow(QMainWindow):
         self.device_actions_group = QGroupBox()
         layout = QHBoxLayout(self.device_actions_group)
         self.scrcpy_button = QPushButton()
+        self.scrcpy_auto_button = QPushButton()
+        self.scrcpy_tcpip_button = QPushButton()
         self.install_apk_button = QPushButton()
         self.screenshot_button = QPushButton()
         self.device_info_button = QPushButton()
         self.shell_button = QPushButton()
         self.logcat_button = QPushButton()
         self.scrcpy_button.clicked.connect(self._launch_scrcpy)
+        self.scrcpy_auto_button.clicked.connect(self._launch_scrcpy_auto)
+        self.scrcpy_tcpip_button.clicked.connect(self._launch_scrcpy_tcpip)
         self.install_apk_button.clicked.connect(self._install_apk)
         self.screenshot_button.clicked.connect(self._screenshot)
         self.device_info_button.clicked.connect(self._device_info)
@@ -363,6 +373,8 @@ class MainWindow(QMainWindow):
         )
         for button in (
             self.scrcpy_button,
+            self.scrcpy_auto_button,
+            self.scrcpy_tcpip_button,
             self.install_apk_button,
             self.screenshot_button,
             self.device_info_button,
@@ -492,8 +504,9 @@ class MainWindow(QMainWindow):
         self._run_worker(task, self._after_connect, f"Connecting {ip}:{connect_port}")
 
     def _disconnect(self) -> None:
+        serial = self.current_serial
         self._run_worker(
-            lambda: self._adb_runner().disconnect(), self._after_disconnect, "Disconnecting ADB devices"
+            lambda: self._adb_runner().disconnect(serial), self._after_disconnect, "Disconnecting ADB device"
         )
 
     def _reset_adb(self) -> None:
@@ -520,6 +533,28 @@ class MainWindow(QMainWindow):
             lambda: self._scrcpy_runner().launch(serial, profile.scrcpy_args),
             self._show_result,
             f"Launching scrcpy for {serial}",
+        )
+
+    def _launch_scrcpy_auto(self) -> None:
+        profile = self._current_profile()
+        extra_args = profile.scrcpy_args if profile else ""
+        self._run_worker(
+            lambda: self._scrcpy_runner().launch(None, extra_args),
+            self._show_result,
+            "Launching scrcpy auto-select",
+        )
+
+    def _launch_scrcpy_tcpip(self) -> None:
+        target = self._validated_connect_target()
+        if not target:
+            return
+        ip, connect_port = target
+        profile = self._current_profile()
+        extra_args = profile.scrcpy_args if profile else ""
+        self._run_worker(
+            lambda: self._scrcpy_runner().launch_tcpip(ip, connect_port, extra_args),
+            self._show_result,
+            f"Launching scrcpy --tcpip={ip}:{connect_port}",
         )
 
     def _install_apk(self) -> None:
@@ -756,7 +791,9 @@ class MainWindow(QMainWindow):
             self.logcat_button,
         ):
             button.setEnabled(adb_ready and can_use_device and not self.operation_running)
-        self.scrcpy_button.setEnabled(scrcpy_ready and can_use_device and not self.operation_running)
+        self.scrcpy_button.setEnabled(scrcpy_ready and bool(self.current_serial) and not self.operation_running)
+        self.scrcpy_auto_button.setEnabled(scrcpy_ready and not self.operation_running)
+        self.scrcpy_tcpip_button.setEnabled(scrcpy_ready and bool(self.ip_edit.text().strip()) and not self.operation_running)
         self.remote_widget.set_controls_enabled(adb_ready and can_use_device and not self.operation_running)
 
     def _save(self) -> None:
@@ -808,6 +845,8 @@ class MainWindow(QMainWindow):
 
         self.device_actions_group.setTitle(self._t("device_actions"))
         self.scrcpy_button.setText(self._t("launch_scrcpy"))
+        self.scrcpy_auto_button.setText(self._t("launch_scrcpy_auto"))
+        self.scrcpy_tcpip_button.setText(self._t("launch_scrcpy_tcpip"))
         self.install_apk_button.setText(self._t("install_apk"))
         self.screenshot_button.setText(self._t("screenshot"))
         self.device_info_button.setText(self._t("device_info"))

@@ -17,9 +17,27 @@ class ScrcpyRunner:
     def version(self) -> CommandResult:
         return self._run(["--version"])
 
-    def launch(self, serial: str, extra_args: str = "") -> CommandResult:
+    def launch(self, serial: str | None = None, extra_args: str = "") -> CommandResult:
         args = shlex.split(extra_args, posix=False) if extra_args.strip() else []
-        command = [str(self.scrcpy_path), "-s", serial, *args]
+        selector = ["-s", serial] if serial else []
+        command = [str(self.scrcpy_path), *selector, *args]
+        return self._start(command)
+
+    def launch_select_tcpip(self, extra_args: str = "") -> CommandResult:
+        args = shlex.split(extra_args, posix=False) if extra_args.strip() else []
+        command = [str(self.scrcpy_path), "--select-tcpip", *args]
+        return self._start(command)
+
+    def launch_tcpip(
+        self, ip: str, port: int | None = None, extra_args: str = "", force: bool = False
+    ) -> CommandResult:
+        args = shlex.split(extra_args, posix=False) if extra_args.strip() else []
+        address = f"{ip}:{port}" if port else ip
+        prefix = "+" if force else ""
+        command = [str(self.scrcpy_path), f"--tcpip={prefix}{address}", *args]
+        return self._start(command)
+
+    def _start(self, command: list[str]) -> CommandResult:
         command_text = " ".join(command)
         started_at = datetime.now()
         try:

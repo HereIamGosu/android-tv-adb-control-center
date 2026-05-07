@@ -50,8 +50,9 @@ class ADBRunner:
     def connect(self, ip: str, port: int) -> CommandResult:
         return self._run(["connect", f"{ip}:{port}"], timeout=30)
 
-    def disconnect(self) -> CommandResult:
-        return self._run(["disconnect"], timeout=30)
+    def disconnect(self, serial: str | None = None) -> CommandResult:
+        args = ["disconnect", serial] if serial else ["disconnect"]
+        return self._run(args, timeout=30)
 
     def kill_server(self) -> CommandResult:
         return self._run(["kill-server"], timeout=30)
