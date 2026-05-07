@@ -43,7 +43,7 @@ The project is built for people who manage or debug:
 
 ## Highlights
 
-- **Wireless ADB pairing** with separate pair-port and connect-port fields.
+- **Wireless ADB pairing** with a temporary pair-port field and a profile-level connect-port.
 - **ADB connect / disconnect / reset** without opening PowerShell.
 - **Device list parser** for `adb devices -l` with serial and state detection.
 - **scrcpy launcher** that always uses `-s <serial>` for predictable multi-device behavior.
@@ -145,12 +145,11 @@ Create a profile with:
 
 - device name
 - IP address or hostname
-- pair-port
 - connect-port
 - custom scrcpy arguments
 - screenshot folder
 
-Pair-port and connect-port are intentionally separate. On modern Android wireless debugging flows, they are often different.
+Pair-port is intentionally not stored in profiles. Android TV generates a new pair-port for every pairing-code session, while connect-port is the stable TCP/IP ADB port used later for `adb connect` and `scrcpy --tcpip`.
 
 ### 3. Pair
 

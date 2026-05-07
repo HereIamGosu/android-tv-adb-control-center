@@ -53,6 +53,7 @@ TRANSLATIONS = {
         "edit_profile": "Edit profile",
         "ip": "IP / hostname",
         "pair_port": "Pair port",
+        "pair_port_session": "Pair port (current session)",
         "connect_port": "Connect port",
         "serial": "Serial",
         "status": "Status",
@@ -60,8 +61,8 @@ TRANSLATIONS = {
         "how_to_connect": "How to connect",
         "connect_help": (
             "IP: enter only the address part, for example 192.168.1.113.\n"
-            "Pair port: take it from 'Pair device with pairing code'. Enter the 6-digit code after pressing Pair.\n"
-            "Connect port: take it from the main Wireless Debugging screen. It is usually different from pair-port.\n"
+            "Pair port is not saved in profiles: Android TV generates a new one for each pairing-code session.\n"
+            "Connect port belongs to the profile. Use the main Wireless Debugging screen, often 5555.\n"
             "scrcpy TCP/IP can start with --tcpip=IP:ConnectPort even before Refresh devices confirms a serial.\n"
             "Actions unlock only when adb devices -l reports the selected serial as device."
         ),
@@ -117,6 +118,7 @@ TRANSLATIONS = {
         "edit_profile": "Изменить",
         "ip": "IP / hostname",
         "pair_port": "Pair port",
+        "pair_port_session": "Pair port (текущая сессия)",
         "connect_port": "Connect port",
         "serial": "Serial",
         "status": "Статус",
@@ -124,8 +126,8 @@ TRANSLATIONS = {
         "how_to_connect": "Как подключиться",
         "connect_help": (
             "IP: вводи только адрес, например 192.168.1.113.\n"
-            "Pair port: бери из окна 'Pair device with pairing code'. 6-значный код вводится после нажатия Pair.\n"
-            "Connect port: бери с главного экрана Wireless Debugging. Обычно он отличается от pair-port.\n"
+            "Pair port не сохраняется в профиле: Android TV генерирует новый порт для каждой pairing-code сессии.\n"
+            "Connect port хранится в профиле. Бери его с главного экрана Wireless Debugging, часто это 5555.\n"
             "scrcpy TCP/IP запускает --tcpip=IP:ConnectPort даже до подтверждения serial через Refresh devices.\n"
             "Действия станут доступны только когда adb devices -l покажет выбранный serial в состоянии device."
         ),
@@ -412,7 +414,7 @@ class MainWindow(QMainWindow):
         if not profile:
             return
         self.ip_edit.setText(profile.ip)
-        self.pair_port_edit.setText(str(profile.pair_port or ""))
+        self.pair_port_edit.clear()
         self.connect_port_edit.setText(str(profile.connect_port or ""))
         self.current_serial = profile.last_serial
         self.device_connected = False
@@ -830,7 +832,7 @@ class MainWindow(QMainWindow):
         self.add_profile_button.setText(self._t("add_profile"))
         self.edit_profile_button.setText(self._t("edit_profile"))
         self.ip_title_label.setText(self._t("ip"))
-        self.pair_port_title_label.setText(self._t("pair_port"))
+        self.pair_port_title_label.setText(self._t("pair_port_session"))
         self.connect_port_title_label.setText(self._t("connect_port"))
         self.serial_title_label.setText(self._t("serial"))
         self.status_title_label.setText(self._t("status"))
