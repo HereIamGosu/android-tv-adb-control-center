@@ -24,6 +24,7 @@
 | 2026-05-07 20:38:00 +03:00 | Проверен и удалён некачественный generated screenshot | Offscreen Qt отрисовал текст квадратами; такой asset ухудшил бы README | `docs/assets/android-tv-adb-control-center-main.png` | `view_image`; безопасное удаление внутри workspace | PNG удалён; README оставляет путь для будущего нормального Windows screenshot |
 | 2026-05-07 20:41:36 +03:00 | Начата UX-правка подключения | Пользователь не понимает, что вводить и что происходит при подключении | `app/ui/main_window.py`, `app/ui/dialogs/device_profile_dialog.py`, `DEV_CHECKLIST.md` | Анализ текущего GUI | Нужно добавить подсказки рядом с IP/pair/connect полями и видимый статус выполняемой операции |
 | 2026-05-07 20:48:00 +03:00 | Добавлены подсказки и статус операций в GUI | Нужно сделать подключение понятным и приложение визуально отзывчивым | `app/ui/main_window.py`, `app/ui/dialogs/device_profile_dialog.py` | `python -m compileall app tests`; `python -m pytest`; offscreen `MainWindow()`; offscreen `DeviceProfileDialog()` | 12 тестов прошли; compileall прошёл; окно и диалог создаются; `__pycache__` удалён |
+| 2026-05-07 20:50:00 +03:00 | Коммит и push UX-правки | Пользователь попросил всегда делать коммиты и push самостоятельно | `README.md`, `app/ui/main_window.py`, `app/ui/dialogs/device_profile_dialog.py`, `DEV_CHECKLIST.md` | `git commit -m "Improve connection guidance in UI"`; `git push` | Коммит `cb4bd7b` успешно отправлен в `origin/main` |
 
 ## Current Task
 
@@ -47,6 +48,7 @@
 | Build | `npm run build` | Not applicable | Нет `package.json`; проект Python |
 | Manual ADB | Pair/connect/scrcpy/APK/screenshot/keyevents на Android TV | Not run | Требуются `adb.exe`, `scrcpy.exe` и устройство |
 | Publish | `git push -u origin main` | Failed | GitHub SSH auth: `Permission denied (publickey)` |
+| Publish | `git push` | Passed | HTTPS remote; `cb4bd7b` отправлен в `origin/main` |
 | README SEO | Проверка Star History / SEO секций через `Select-String` | Passed | Ссылки используют `HereIamGosu/android-tv-adb-control-center` |
 | UI hints | Offscreen construction: `MainWindow()` и `DeviceProfileDialog()` | Passed | Проверяет новые подсказки и layouts без запуска event loop |
 
