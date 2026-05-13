@@ -10,6 +10,7 @@ class DeviceProfile:
     id: str
     name: str
     ip: str
+    pair_port: int | None
     connect_port: int | None
     last_serial: str | None
     scrcpy_args: str
@@ -22,6 +23,7 @@ class DeviceProfile:
         cls,
         name: str,
         ip: str,
+        pair_port: int | None,
         connect_port: int | None,
         scrcpy_args: str,
         screenshot_dir: str,
@@ -33,6 +35,7 @@ class DeviceProfile:
             id=profile_id,
             name=name,
             ip=ip,
+            pair_port=pair_port,
             connect_port=connect_port,
             last_serial=last_serial,
             scrcpy_args=scrcpy_args,
@@ -47,6 +50,7 @@ class DeviceProfile:
             id=str(data.get("id", "")),
             name=str(data.get("name", "")),
             ip=str(data.get("ip", "")),
+            pair_port=_optional_int(data.get("pair_port")),
             connect_port=_optional_int(data.get("connect_port")),
             last_serial=data.get("last_serial"),
             scrcpy_args=str(data.get("scrcpy_args", "")),

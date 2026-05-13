@@ -179,6 +179,7 @@ class WorkerSignals(QObject):
 class CommandWorker(QRunnable):
     def __init__(self, callback: Callable[[], object]):
         super().__init__()
+        self.setAutoDelete(False)
         self.callback = callback
         self.signals = WorkerSignals()
 
@@ -204,6 +205,7 @@ class MainWindow(QMainWindow):
         self.device_connected = False
         self.operation_running = False
         self.shell_windows: list[ShellWindow] = []
+        self._active_workers: set[CommandWorker] = set()
         self._operation_text = ""
 
         self._build_ui()
@@ -414,7 +416,7 @@ class MainWindow(QMainWindow):
         if not profile:
             return
         self.ip_edit.setText(profile.ip)
-        self.pair_port_edit.clear()
+        self.pair_port_edit.setText(str(profile.pair_port or ""))
         self.connect_port_edit.setText(str(profile.connect_port or ""))
         self.current_serial = profile.last_serial
         self.device_connected = False
@@ -541,7 +543,7 @@ class MainWindow(QMainWindow):
         profile = self._current_profile()
         extra_args = profile.scrcpy_args if profile else ""
         self._run_worker(
-            lambda: self._scrcpy_runner().launch(None, extra_args),
+            lambda: self._scrcpy_runner().launch_auto(extra_args),
             self._show_result,
             "Launching scrcpy auto-select",
         )
@@ -750,28 +752,56 @@ class MainWindow(QMainWindow):
         on_finished: Callable[[object], None],
         operation_text: str,
     ) -> None:
+        if self.operation_running:
+            return
         worker = CommandWorker(task)
+        self._active_workers.add(worker)
         self.operation_running = True
         self._operation_text = operation_text
         self.operation_label.setText(self._t("running").format(operation=operation_text))
         self._apply_enabled_state()
-        worker.signals.finished.connect(lambda payload: self._finish_worker(payload, on_finished))
-        worker.signals.failed.connect(lambda message: self._fail_worker(message))
+        worker.signals.finished.connect(
+            lambda payload, active_worker=worker: self._finish_worker(
+                active_worker, payload, on_finished
+            )
+        )
+        worker.signals.failed.connect(
+            lambda message, active_worker=worker: self._fail_worker(
+                active_worker, message
+            )
+        )
         self.thread_pool.start(worker)
 
-    def _finish_worker(self, payload: object, on_finished: Callable[[object], None]) -> None:
+    def _finish_worker(
+        self,
+        worker: CommandWorker,
+        payload: object,
+        on_finished: Callable[[object], None],
+    ) -> None:
         self.operation_running = False
         self._operation_text = ""
         self.operation_label.setText(self._t("idle"))
-        on_finished(payload)
+        self._active_workers.discard(worker)
+        try:
+            on_finished(payload)
+        except Exception as exc:
+            self._fail_worker(worker, str(exc))
+            return
         self._apply_enabled_state()
 
-    def _fail_worker(self, message: str) -> None:
+    def _fail_worker(self, worker: CommandWorker, message: str) -> None:
         self.operation_running = False
         self._operation_text = ""
+        self._active_workers.discard(worker)
         self.operation_label.setText(self._t("failed"))
         self._apply_enabled_state()
         QMessageBox.critical(self, "Error", message)
+
+    def closeEvent(self, event) -> None:
+        if self._active_workers:
+            self.thread_pool.waitForDone(5000)
+            self._active_workers.clear()
+        super().closeEvent(event)
 
     def _apply_enabled_state(self) -> None:
         adb_ready = bool(self.settings.adb_path)
@@ -793,7 +823,7 @@ class MainWindow(QMainWindow):
             self.logcat_button,
         ):
             button.setEnabled(adb_ready and can_use_device and not self.operation_running)
-        self.scrcpy_button.setEnabled(scrcpy_ready and bool(self.current_serial) and not self.operation_running)
+        self.scrcpy_button.setEnabled(scrcpy_ready and can_use_device and not self.operation_running)
         self.scrcpy_auto_button.setEnabled(scrcpy_ready and not self.operation_running)
         self.scrcpy_tcpip_button.setEnabled(scrcpy_ready and bool(self.ip_edit.text().strip()) and not self.operation_running)
         self.remote_widget.set_controls_enabled(adb_ready and can_use_device and not self.operation_running)

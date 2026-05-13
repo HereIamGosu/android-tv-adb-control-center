@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import Callable
+
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLineEdit,
@@ -11,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.adb_runner import ADBRunner
+from app.core.command_result import CommandResult
 
 
 DANGEROUS_PATTERNS = (
@@ -41,6 +45,26 @@ TEXT = {
 }
 
 
+class ShellWorkerSignals(QObject):
+    finished = Signal(object)
+    failed = Signal(str)
+
+
+class ShellCommandWorker(QRunnable):
+    def __init__(self, callback: Callable[[], CommandResult]):
+        super().__init__()
+        self.setAutoDelete(False)
+        self.callback = callback
+        self.signals = ShellWorkerSignals()
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            self.signals.finished.emit(self.callback())
+        except Exception as exc:
+            self.signals.failed.emit(str(exc))
+
+
 class ShellWindow(QWidget):
     def __init__(
         self,
@@ -54,16 +78,19 @@ class ShellWindow(QWidget):
         self.setWindowTitle(f"ADB Shell - {serial}")
         self.adb_runner = adb_runner
         self.serial = serial
+        self.thread_pool = QThreadPool.globalInstance()
+        self.command_running = False
+        self._active_workers: set[ShellCommandWorker] = set()
         self.command_edit = QLineEdit()
         self.output_edit = QPlainTextEdit()
         self.output_edit.setReadOnly(True)
 
-        run_button = QPushButton(self._t("run"))
-        run_button.clicked.connect(self._run_command)
+        self.run_button = QPushButton(self._t("run"))
+        self.run_button.clicked.connect(self._run_command)
 
         top = QHBoxLayout()
         top.addWidget(self.command_edit)
-        top.addWidget(run_button)
+        top.addWidget(self.run_button)
 
         layout = QVBoxLayout(self)
         layout.addLayout(top)
@@ -83,8 +110,27 @@ class ShellWindow(QWidget):
             )
             if answer != QMessageBox.StandardButton.Yes:
                 return
-        result = self.adb_runner.shell(self.serial, command)
+        self.command_running = True
+        self.run_button.setEnabled(False)
         self.output_edit.appendPlainText(f"> {command}")
+        worker = ShellCommandWorker(lambda: self.adb_runner.shell(self.serial, command))
+        self._active_workers.add(worker)
+        worker.signals.finished.connect(
+            lambda result, active_worker=worker: self._show_result(
+                active_worker, result
+            )
+        )
+        worker.signals.failed.connect(
+            lambda message, active_worker=worker: self._show_error(
+                active_worker, message
+            )
+        )
+        self.thread_pool.start(worker)
+
+    def _show_result(self, worker: ShellCommandWorker, result: CommandResult) -> None:
+        self._active_workers.discard(worker)
+        self.command_running = False
+        self.run_button.setEnabled(True)
         self.output_edit.appendPlainText(result.stdout)
         if result.stderr:
             self.output_edit.appendPlainText(f"stderr:\n{result.stderr}")
@@ -92,6 +138,18 @@ class ShellWindow(QWidget):
             self.output_edit.appendPlainText(
                 f"{self._t('interpretation')}:\n{result.interpretation}"
             )
+
+    def _show_error(self, worker: ShellCommandWorker, message: str) -> None:
+        self._active_workers.discard(worker)
+        self.command_running = False
+        self.run_button.setEnabled(True)
+        self.output_edit.appendPlainText(f"error:\n{message}")
+
+    def closeEvent(self, event) -> None:
+        if self._active_workers:
+            self.thread_pool.waitForDone(5000)
+            self._active_workers.clear()
+        super().closeEvent(event)
 
     def _t(self, key: str) -> str:
         return TEXT[self.language][key]

@@ -8,6 +8,8 @@ from pathlib import Path
 from app.core.command_interpreter import CommandInterpreter
 from app.core.command_result import CommandResult
 
+SCRCPY_VERSION_TIMEOUT_SECONDS = 10
+
 
 class ScrcpyRunner:
     def __init__(self, scrcpy_path: Path, language: str = "ru"):
@@ -15,12 +17,18 @@ class ScrcpyRunner:
         self.interpreter = CommandInterpreter(language)
 
     def version(self) -> CommandResult:
-        return self._run(["--version"])
+        return self._run(["--version"], timeout=SCRCPY_VERSION_TIMEOUT_SECONDS)
 
-    def launch(self, serial: str | None = None, extra_args: str = "") -> CommandResult:
+    def launch(self, serial: str, extra_args: str = "") -> CommandResult:
+        if not serial:
+            raise ValueError("serial is required for scrcpy serial mode")
         args = shlex.split(extra_args, posix=False) if extra_args.strip() else []
-        selector = ["-s", serial] if serial else []
-        command = [str(self.scrcpy_path), *selector, *args]
+        command = [str(self.scrcpy_path), "-s", serial, *args]
+        return self._start(command)
+
+    def launch_auto(self, extra_args: str = "") -> CommandResult:
+        args = shlex.split(extra_args, posix=False) if extra_args.strip() else []
+        command = [str(self.scrcpy_path), *args]
         return self._start(command)
 
     def launch_select_tcpip(self, extra_args: str = "") -> CommandResult:

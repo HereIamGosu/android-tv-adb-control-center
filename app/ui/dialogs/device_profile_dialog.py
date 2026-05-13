@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import datetime
 
 from PySide6.QtWidgets import (
     QDialog,
@@ -26,6 +27,8 @@ TEXT = {
         "ip": "IP / hostname",
         "ip_hint": "Enter only the IP part. If TV shows 192.168.1.113:39631, enter 192.168.1.113.",
         "connect_port": "Connect port",
+        "pair_port": "Pair port",
+        "pair_hint": "Temporary port from the pairing-code dialog. It can change for every pairing session.",
         "connect_hint": "Stable ADB TCP/IP port from the main Wireless Debugging screen. For many Android TV devices this is 5555.",
         "scrcpy_args": "scrcpy args",
         "screenshot_dir": "Screenshot folder",
@@ -42,6 +45,8 @@ TEXT = {
         "ip": "IP / hostname",
         "ip_hint": "Вводи только IP. Если TV показывает 192.168.1.113:39631, введи 192.168.1.113.",
         "connect_port": "Connect port",
+        "pair_port": "Pair port",
+        "pair_hint": "Временный порт из окна pairing code. Он может меняться для каждой сессии сопряжения.",
         "connect_hint": "Стабильный ADB TCP/IP порт с главного экрана Wireless Debugging. Для многих Android TV это 5555.",
         "scrcpy_args": "Аргументы scrcpy",
         "screenshot_dir": "Папка скриншотов",
@@ -69,6 +74,10 @@ class DeviceProfileDialog(QDialog):
         self.name_edit = QLineEdit(profile.name if profile else "")
         self.ip_edit = QLineEdit(profile.ip if profile else "")
         self.ip_edit.setPlaceholderText("Example: 192.168.1.113")
+        self.pair_port_edit = QLineEdit(
+            str(profile.pair_port) if profile and profile.pair_port else ""
+        )
+        self.pair_port_edit.setPlaceholderText("Example: 39631")
         self.connect_port_edit = QLineEdit(
             str(profile.connect_port) if profile and profile.connect_port else ""
         )
@@ -83,6 +92,10 @@ class DeviceProfileDialog(QDialog):
         form = QFormLayout()
         form.addRow(self._t("name"), self.name_edit)
         form.addRow(self._t("ip"), self._field_with_hint(self.ip_edit, self._t("ip_hint")))
+        form.addRow(
+            self._t("pair_port"),
+            self._field_with_hint(self.pair_port_edit, self._t("pair_hint")),
+        )
         form.addRow(
             self._t("connect_port"),
             self._field_with_hint(self.connect_port_edit, self._t("connect_hint")),
@@ -112,17 +125,25 @@ class DeviceProfileDialog(QDialog):
             if self.connect_port_edit.text().strip()
             else None
         )
+        pair_port = (
+            int(self.pair_port_edit.text().strip())
+            if self.pair_port_edit.text().strip()
+            else None
+        )
         if self.profile:
             self.profile.name = name
             self.profile.ip = ip
+            self.profile.pair_port = pair_port
             self.profile.connect_port = connect_port
             self.profile.last_serial = f"{ip}:{connect_port}" if connect_port else None
             self.profile.scrcpy_args = self.scrcpy_args_edit.text().strip()
             self.profile.screenshot_dir = self.screenshot_dir_edit.text().strip()
+            self.profile.updated_at = datetime.now().isoformat(timespec="seconds")
             return self.profile
         return DeviceProfile.create(
             name=name,
             ip=ip,
+            pair_port=pair_port,
             connect_port=connect_port,
             scrcpy_args=self.scrcpy_args_edit.text().strip(),
             screenshot_dir=self.screenshot_dir_edit.text().strip(),
@@ -158,6 +179,7 @@ class DeviceProfileDialog(QDialog):
             return
         for validator, value in (
             (validate_ip_or_host, self.ip_edit.text()),
+            (validate_port, self.pair_port_edit.text()),
             (validate_port, self.connect_port_edit.text()),
         ):
             is_valid, error = validator(value)

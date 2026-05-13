@@ -8,6 +8,13 @@ from pathlib import Path
 from app.core.command_interpreter import CommandInterpreter
 from app.core.command_result import CommandResult
 
+KNOWN_DEVICE_STATES = {"device", "offline", "unauthorized"}
+FAST_COMMAND_TIMEOUT_SECONDS = 10
+PAIR_CONNECT_TIMEOUT_SECONDS = 30
+SHELL_COMMAND_TIMEOUT_SECONDS = 45
+SCREENSHOT_TIMEOUT_SECONDS = 20
+APK_INSTALL_TIMEOUT_SECONDS = 180
+
 
 @dataclass(frozen=True)
 class DeviceEntry:
@@ -25,8 +32,9 @@ def parse_adb_devices(output: str) -> list[DeviceEntry]:
         parts = line.split()
         if len(parts) < 2:
             continue
+        state = parts[1] if parts[1] in KNOWN_DEVICE_STATES else "unknown"
         entries.append(
-            DeviceEntry(serial=parts[0], state=parts[1], details=" ".join(parts[2:]))
+            DeviceEntry(serial=parts[0], state=state, details=" ".join(parts[2:]))
         )
     return entries
 
@@ -37,46 +45,61 @@ class ADBRunner:
         self.interpreter = CommandInterpreter(language)
 
     def version(self) -> CommandResult:
-        return self._run(["version"])
+        return self._run(["version"], timeout=FAST_COMMAND_TIMEOUT_SECONDS)
 
     def devices(self) -> CommandResult:
-        return self._run(["devices", "-l"])
+        return self._run(["devices", "-l"], timeout=FAST_COMMAND_TIMEOUT_SECONDS)
 
     def pair(self, ip: str, port: int, pairing_code: str) -> CommandResult:
         return self._run(
-            ["pair", f"{ip}:{port}"], input_text=pairing_code + "\n", timeout=30
+            ["pair", f"{ip}:{port}"],
+            input_text=pairing_code + "\n",
+            timeout=PAIR_CONNECT_TIMEOUT_SECONDS,
         )
 
     def connect(self, ip: str, port: int) -> CommandResult:
-        return self._run(["connect", f"{ip}:{port}"], timeout=30)
+        return self._run(
+            ["connect", f"{ip}:{port}"], timeout=PAIR_CONNECT_TIMEOUT_SECONDS
+        )
 
     def disconnect(self, serial: str | None = None) -> CommandResult:
         args = ["disconnect", serial] if serial else ["disconnect"]
-        return self._run(args, timeout=30)
+        return self._run(args, timeout=FAST_COMMAND_TIMEOUT_SECONDS)
 
     def kill_server(self) -> CommandResult:
-        return self._run(["kill-server"], timeout=30)
+        return self._run(["kill-server"], timeout=FAST_COMMAND_TIMEOUT_SECONDS)
 
     def start_server(self) -> CommandResult:
-        return self._run(["start-server"], timeout=30)
+        return self._run(["start-server"], timeout=FAST_COMMAND_TIMEOUT_SECONDS)
 
     def install_apk(self, serial: str, apk_path: Path) -> CommandResult:
-        return self._run(["-s", serial, "install", str(apk_path)], timeout=120)
+        return self._run(
+            ["-s", serial, "install", str(apk_path)],
+            timeout=APK_INSTALL_TIMEOUT_SECONDS,
+        )
 
     def shell(self, serial: str, command: str) -> CommandResult:
-        return self._run(["-s", serial, "shell", command], timeout=60)
+        return self._run(
+            ["-s", serial, "shell", command], timeout=SHELL_COMMAND_TIMEOUT_SECONDS
+        )
 
     def keyevent(self, serial: str, keycode: str) -> CommandResult:
         return self._run(
-            ["-s", serial, "shell", "input", "keyevent", keycode], timeout=20
+            ["-s", serial, "shell", "input", "keyevent", keycode],
+            timeout=FAST_COMMAND_TIMEOUT_SECONDS,
         )
 
     def getprop(self, serial: str, prop: str) -> CommandResult:
-        return self._run(["-s", serial, "shell", "getprop", prop], timeout=20)
+        return self._run(
+            ["-s", serial, "shell", "getprop", prop],
+            timeout=FAST_COMMAND_TIMEOUT_SECONDS,
+        )
 
     def screenshot_bytes(self, serial: str) -> CommandResult:
         return self._run(
-            ["-s", serial, "exec-out", "screencap", "-p"], text=False, timeout=30
+            ["-s", serial, "exec-out", "screencap", "-p"],
+            text=False,
+            timeout=SCREENSHOT_TIMEOUT_SECONDS,
         )
 
     def _run(
