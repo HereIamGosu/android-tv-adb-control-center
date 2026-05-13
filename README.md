@@ -55,22 +55,6 @@ Built for:
 - **Local-first settings** stored as JSON under `%APPDATA%`.
 - **Bilingual UI**: English and Russian.
 
-## Screenshot
-
-The first public screenshot should be captured from a normal Windows GUI session after a successful `adb devices -l` refresh.
-
-Recommended repository path:
-
-```text
-docs/assets/android-tv-adb-control-center-main.png
-```
-
-Suggested alt text:
-
-```text
-Android TV ADB Control Center main window showing ADB status, device profile, connection actions, remote control buttons, and command log.
-```
-
 ## Table of Contents
 
 - [Quick Start](#quick-start)
@@ -81,7 +65,6 @@ Android TV ADB Control Center main window showing ADB status, device profile, co
 - [Security Model](#security-model)
 - [Project Structure](#project-structure)
 - [Development](#development)
-- [SEO Topics](#seo-topics)
 - [Roadmap](#roadmap)
 - [Credits](#credits)
 
@@ -428,44 +411,6 @@ python -c "from PySide6.QtWidgets import QApplication; from app.ui.main_window i
 ```
 
 Current automated tests cover validators, command interpretation, settings storage, `adb devices -l` parsing, ADB/scrcpy command formation, screenshot bytes handling, worker lifecycle, operation timeouts, and dangerous shell pattern detection. They do not require a real Android TV device.
-
-## SEO Topics
-
-Recommended GitHub repository topics:
-
-```text
-android-tv
-google-tv
-adb
-adb-gui
-scrcpy
-scrcpy-gui
-wireless-debugging
-android-debug-bridge
-apk-installer
-android-tv-remote
-google-tv-remote
-pyside6
-python
-windows
-desktop-app
-```
-
-Recommended repository description:
-
-```text
-Windows GUI for Android TV / Google TV ADB pairing, wireless connect, scrcpy, APK install, screenshots, remote control, shell, and diagnostics.
-```
-
-Search phrases this project is designed to match:
-
-- Android TV ADB GUI
-- Google TV ADB wireless debugging
-- Android TV scrcpy GUI
-- ADB pair connect GUI Windows
-- APK installer for Android TV
-- Android TV remote control from PC
-- Xiaomi TV Stick ADB tool
 
 ## Roadmap
 
