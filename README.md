@@ -52,6 +52,8 @@ Built for:
 - **Simple ADB shell window** with warnings for potentially destructive commands.
 - **Human-readable diagnostics** for common ADB and APK failures.
 - **Operation timeouts** so short commands, pairing, screenshots, shell commands, and APK installs do not hang forever.
+- **Auto connection monitor** — polls `adb devices -l` every 30 s; updates status and disables buttons silently when the device drops.
+- **Live Logcat** — streams `adb logcat -v threadtime` directly in the main window with color-coded severity and tag filter.
 - **Local-first settings** stored as JSON under `%APPDATA%`.
 - **Bilingual UI**: English and Russian.
 
@@ -250,6 +252,19 @@ No shell redirection is used, and PNG output is not decoded as text.
 | Volume Down | `KEYCODE_VOLUME_DOWN` |
 | Power | `KEYCODE_POWER` |
 
+### Connection Monitor
+
+The app polls `adb devices -l` every 30 seconds while a device is connected. If the device drops off the network, the status updates to `Offline` and all device action buttons are disabled automatically — no popup, no hanging commands.
+
+### Live Logcat
+
+A Logcat panel in the main window streams `adb logcat -v threadtime` continuously while connected:
+
+- Lines are color-coded by severity: red (Error), orange (Warning), gray (Debug/Verbose).
+- A tag filter field hides irrelevant lines in real time.
+- The buffer is capped at 2 000 lines to keep memory use stable.
+- Logcat restarts automatically on reconnect, appending a `--- reconnected ---` separator.
+
 ### Shell Window
 
 The MVP shell window runs one command at a time:
@@ -410,11 +425,11 @@ $env:QT_QPA_PLATFORM='offscreen'
 python -c "from PySide6.QtWidgets import QApplication; from app.ui.main_window import MainWindow; import sys; app=QApplication(sys.argv); w=MainWindow(); print('main window constructed')"
 ```
 
-Current automated tests cover validators, command interpretation, settings storage, `adb devices -l` parsing, ADB/scrcpy command formation, screenshot bytes handling, worker lifecycle, operation timeouts, and dangerous shell pattern detection. They do not require a real Android TV device.
+Current automated tests cover validators, command interpretation, settings storage, `adb devices -l` parsing, ADB/scrcpy command formation, screenshot bytes handling, worker lifecycle, operation timeouts, dangerous shell pattern detection, logcat widget behavior, and connection monitor timer lifecycle. They do not require a real Android TV device.
 
 ## Roadmap
 
-- Streaming `adb logcat` window with start/stop and save-to-file.
+- Logcat save-to-file.
 - First-run setup wizard.
 - Device profile import/export.
 - Packaged Windows build.
