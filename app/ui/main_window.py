@@ -30,6 +30,7 @@ from app.core.screenshot_service import ScreenshotService
 from app.core.settings_store import SettingsStore
 from app.core.validators import validate_ip_or_host, validate_port, validate_serial
 from app.ui.dialogs.device_profile_dialog import DeviceProfileDialog
+from app.ui.dialogs.screenshot_preview_dialog import ScreenshotPreviewDialog
 from app.ui.dialogs.settings_dialog import SettingsDialog
 from app.ui.dialogs.shell_window import ShellWindow
 from app.ui.widgets.command_log_widget import CommandLogWidget
@@ -615,10 +616,18 @@ class MainWindow(QMainWindow):
         self._run_worker(
             lambda: ScreenshotService(self._adb_runner()).capture(
                 serial, Path(profile.screenshot_dir)
-            )[0],
-            self._show_result,
+            ),
+            self._after_screenshot,
             f"Taking screenshot from {serial}",
         )
+
+    def _after_screenshot(self, payload: tuple) -> None:
+        result, file_path = payload
+        self._show_result(result)
+        if result.status == "success" and file_path is not None:
+            image_bytes = result.binary_stdout or b""
+            dialog = ScreenshotPreviewDialog(image_bytes, str(file_path), self)
+            dialog.exec()
 
     def _device_info(self) -> None:
         serial = self._validated_serial()
