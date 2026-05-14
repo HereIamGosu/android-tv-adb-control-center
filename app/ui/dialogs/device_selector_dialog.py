@@ -102,17 +102,19 @@ class DeviceSelectorDialog(QDialog):
 
     def _on_refresh_done(self, result) -> None:
         self._refresh_button.setEnabled(True)
+        if result.status != "success":
+            return
         entries = parse_adb_devices(result.stdout)
-        devices = [(e.serial, e.state) for e in entries]
-        self._populate(devices)
+        self._populate([(e.serial, e.state) for e in entries])
 
     def _on_refresh_failed(self, _message: str) -> None:
         self._refresh_button.setEnabled(True)
 
     def _select(self) -> None:
         row = self.table.currentRow()
-        if row >= 0:
-            item = self.table.item(row, 1)
-            if item:
-                self.selected_serial = item.text()
+        if row < 0:
+            return
+        item = self.table.item(row, 1)
+        if item:
+            self.selected_serial = item.text()
         self.accept()
