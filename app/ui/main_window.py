@@ -701,6 +701,8 @@ class MainWindow(QMainWindow):
                 profile.last_serial = serial
                 self._save()
             self.device_status.set_status(self._status("connected"), serial)
+            self._start_monitor()
+            self.logcat_widget.start(self.settings.adb_path, serial)
         else:
             self.device_connected = False
             self.device_status.set_status(self._status("error"), serial)
@@ -714,6 +716,8 @@ class MainWindow(QMainWindow):
     def _after_disconnect(self, result: CommandResult) -> None:
         self._show_result(result)
         self.device_connected = False
+        self._stop_monitor()
+        self.logcat_widget.stop()
         self.device_status.set_status(self._status("ready"), self.current_serial)
         self._apply_enabled_state()
 
@@ -741,12 +745,18 @@ class MainWindow(QMainWindow):
             self.device_status.set_status(self._status("connected"), self.current_serial)
         elif self.current_serial and states.get(self.current_serial) == "offline":
             self.device_connected = False
+            self._stop_monitor()
+            self.logcat_widget.stop()
             self.device_status.set_status(self._status("offline"), self.current_serial)
         elif self.current_serial and states.get(self.current_serial) == "unauthorized":
             self.device_connected = False
+            self._stop_monitor()
+            self.logcat_widget.stop()
             self.device_status.set_status(self._status("unauthorized"), self.current_serial)
         else:
             self.device_connected = False
+            self._stop_monitor()
+            self.logcat_widget.stop()
             self.device_status.set_status(self._status("ready"), self.current_serial)
         self._apply_enabled_state()
 
