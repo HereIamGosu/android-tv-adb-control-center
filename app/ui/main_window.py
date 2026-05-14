@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal, Slot
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimer, Signal, Slot
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -210,6 +210,10 @@ class MainWindow(QMainWindow):
         self.shell_windows: list[ShellWindow] = []
         self._active_workers: set[CommandWorker] = set()
         self._operation_text = ""
+        self._monitor_timer = QTimer(self)
+        self._monitor_timer.setInterval(30_000)
+        self._monitor_timer.timeout.connect(self._monitor_tick)
+        self._monitoring_tick = False
 
         self._build_ui()
         self._apply_language()
@@ -513,6 +517,27 @@ class MainWindow(QMainWindow):
         self._run_worker(
             lambda: self._adb_runner().disconnect(serial), self._after_disconnect, "Disconnecting ADB device"
         )
+
+    def _start_monitor(self) -> None:
+        if not self._monitor_timer.isActive():
+            self._monitor_timer.start()
+
+    def _stop_monitor(self) -> None:
+        self._monitor_timer.stop()
+
+    def _monitor_tick(self) -> None:
+        if self.operation_running or not self.current_serial:
+            return
+        self._monitoring_tick = True
+        self._run_worker(
+            lambda: self._adb_runner().devices(),
+            self._after_monitor_tick,
+            "monitor tick",
+        )
+
+    def _after_monitor_tick(self, result) -> None:
+        self._monitoring_tick = False
+        self._update_devices_from_result(result)
 
     def _reset_adb(self) -> None:
         def task() -> list[CommandResult]:
