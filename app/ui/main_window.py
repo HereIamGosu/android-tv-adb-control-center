@@ -102,6 +102,9 @@ TRANSLATIONS = {
         "offline": "Offline",
         "unauthorized": "Unauthorized",
         "error": "Error",
+        "logcat": "Logcat",
+        "logcat_filter": "Filter by tag",
+        "logcat_no_device": "No device connected",
     },
     "ru": {
         "window_title": "ADB TV Control Center",
@@ -167,6 +170,9 @@ TRANSLATIONS = {
         "offline": "Offline",
         "unauthorized": "Unauthorized",
         "error": "Ошибка",
+        "logcat": "Logcat",
+        "logcat_filter": "Фильтр по тегу",
+        "logcat_no_device": "Устройство не подключено",
     },
 }
 
