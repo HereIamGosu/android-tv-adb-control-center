@@ -28,6 +28,7 @@ dist/
 
 # PyInstaller / desktop packaging
 *.spec
+!pyinstaller.spec
 
 # Local runtime data
 config/settings.json
