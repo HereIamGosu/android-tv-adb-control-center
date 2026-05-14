@@ -44,7 +44,7 @@ class ScreenshotPreviewDialog(QDialog):
         layout.addWidget(path_label)
 
         buttons = QHBoxLayout()
-        self._open_folder_button = QPushButton("Open folder")
+        self._open_folder_button = QPushButton("Open Folder")
         self._open_folder_button.clicked.connect(self._open_folder)
         close_button = QPushButton("Close")
         close_button.clicked.connect(self.accept)

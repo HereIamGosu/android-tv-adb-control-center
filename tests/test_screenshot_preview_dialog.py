@@ -47,13 +47,13 @@ def test_open_folder_button_exists(tmp_path):
     dlg = ScreenshotPreviewDialog(b"", path, None)
     buttons = dlg.findChildren(QPushButton)
     texts = [b.text() for b in buttons]
-    assert any("folder" in t.lower() or "папк" in t.lower() for t in texts)
+    assert any("Open Folder" in t or "папк" in t.lower() for t in texts)
 
 
 def test_open_folder_button_is_enabled(tmp_path):
     path = str(tmp_path / "screenshot_2026-05-14_12-00-00.png")
     dlg = ScreenshotPreviewDialog(b"", path, None)
     buttons = dlg.findChildren(QPushButton)
-    folder_btns = [b for b in buttons if "folder" in b.text().lower() or "папк" in b.text().lower()]
+    folder_btns = [b for b in buttons if "Open Folder" in b.text() or "папк" in b.text().lower()]
     assert folder_btns
     assert folder_btns[0].isEnabled()
