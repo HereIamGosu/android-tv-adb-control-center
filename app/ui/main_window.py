@@ -438,7 +438,7 @@ class MainWindow(QMainWindow):
         self.device_connected = False
         self.serial_combo.clear()
         if profile.last_serial:
-            self.serial_combo.addItem(profile.last_serial)
+            self.serial_combo.addItem(profile.last_serial, profile.last_serial)
         self.device_status.set_status(self._status("ready"), self.current_serial)
         self.settings.last_device_profile_id = profile.id
         self._save()
@@ -923,6 +923,8 @@ class MainWindow(QMainWindow):
         self.scrcpy_button.setEnabled(scrcpy_ready and can_use_device and not self.operation_running)
         self.scrcpy_auto_button.setEnabled(scrcpy_ready and not self.operation_running)
         self.scrcpy_tcpip_button.setEnabled(scrcpy_ready and bool(self.ip_edit.text().strip()) and not self.operation_running)
+        if hasattr(self, "open_selector_button"):
+            self.open_selector_button.setEnabled(adb_ready and not self.operation_running)
         self.remote_widget.set_controls_enabled(adb_ready and can_use_device and not self.operation_running)
 
     def _save(self) -> None:
