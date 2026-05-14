@@ -30,6 +30,7 @@ from app.core.screenshot_service import ScreenshotService
 from app.core.settings_store import SettingsStore
 from app.core.validators import validate_ip_or_host, validate_port, validate_serial
 from app.ui.dialogs.device_profile_dialog import DeviceProfileDialog
+from app.ui.dialogs.device_selector_dialog import DeviceSelectorDialog
 from app.ui.dialogs.screenshot_preview_dialog import ScreenshotPreviewDialog
 from app.ui.dialogs.settings_dialog import SettingsDialog
 from app.ui.dialogs.shell_window import ShellWindow
@@ -323,10 +324,19 @@ class MainWindow(QMainWindow):
         layout.addRow(self.connect_port_title_label, self.connect_port_edit)
         self.serial_hint_label = QLabel()
         self.serial_hint_label.setWordWrap(True)
+        self.open_selector_button = QPushButton("⟳")
+        self.open_selector_button.setFixedWidth(28)
+        self.open_selector_button.setToolTip("Refresh & Select device")
+        self.open_selector_button.clicked.connect(self._open_device_selector)
+        serial_row_widget = QWidget()
+        serial_row_layout = QHBoxLayout(serial_row_widget)
+        serial_row_layout.setContentsMargins(0, 0, 0, 0)
+        serial_row_layout.addWidget(self.serial_combo, 1)
+        serial_row_layout.addWidget(self.open_selector_button)
         layout.addRow(
             self.serial_title_label,
             self._field_with_hint(
-                self.serial_combo,
+                serial_row_widget,
                 self.serial_hint_label,
             ),
         )
@@ -434,10 +444,28 @@ class MainWindow(QMainWindow):
         self._save()
         self._apply_enabled_state()
 
-    def _serial_changed(self, serial: str) -> None:
-        self.current_serial = serial or None
+    def _serial_changed(self, _text: str) -> None:
+        data = self.serial_combo.currentData()
+        text = self.serial_combo.currentText().strip()
+        self.current_serial = data if data else (text or None)
         self.device_connected = False
         self._apply_enabled_state()
+
+    def _open_device_selector(self) -> None:
+        entries = parse_adb_devices(
+            self._last_devices_output if hasattr(self, "_last_devices_output") else ""
+        )
+        devices = [(e.serial, e.state) for e in entries]
+        dialog = DeviceSelectorDialog(self.profiles, devices, self._adb_runner(), self)
+        if dialog.exec() and dialog.selected_serial:
+            serial = dialog.selected_serial
+            row = self.serial_combo.findData(serial)
+            if row < 0:
+                row = self.serial_combo.findText(serial)
+            if row < 0:
+                self.serial_combo.addItem(serial, serial)
+                row = self.serial_combo.count() - 1
+            self.serial_combo.setCurrentIndex(row)
 
     def _open_settings(self) -> None:
         dialog = SettingsDialog(self.settings, self.settings.language, self)
@@ -735,18 +763,33 @@ class MainWindow(QMainWindow):
         self._update_devices_from_result(result)
 
     def _update_devices_from_result(self, result: CommandResult) -> None:
+        self._last_devices_output = result.stdout
         entries = parse_adb_devices(result.stdout)
         current = self.current_serial
         self.serial_combo.blockSignals(True)
         self.serial_combo.clear()
+        serial_to_name = {}
+        for profile in self.profiles:
+            if profile.last_serial:
+                serial_to_name[profile.last_serial] = profile.name
+            if profile.ip and profile.connect_port:
+                serial_to_name[f"{profile.ip}:{profile.connect_port}"] = profile.name
         for entry in entries:
-            self.serial_combo.addItem(entry.serial)
+            name = serial_to_name.get(entry.serial)
+            label = f"{name} · {entry.serial}" if name else entry.serial
+            self.serial_combo.addItem(label, entry.serial)
         if current:
-            row = self.serial_combo.findText(current)
+            row = -1
+            for i in range(self.serial_combo.count()):
+                if self.serial_combo.itemData(i) == current:
+                    row = i
+                    break
+            if row < 0:
+                row = self.serial_combo.findText(current)
             if row >= 0:
                 self.serial_combo.setCurrentIndex(row)
         self.serial_combo.blockSignals(False)
-        selected = self.serial_combo.currentText().strip()
+        selected = self.serial_combo.currentData() or self.serial_combo.currentText().strip()
         self.current_serial = selected or current
         states = {entry.serial: entry.state for entry in entries}
         if self.current_serial and states.get(self.current_serial) == "device":
