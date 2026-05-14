@@ -45,6 +45,7 @@ class LogcatWidget(QWidget):
         self._language = language
         self._process: QProcess | None = None
         self._serial: str = ""
+        self._started_once: bool = False
 
         self.filter_label = QLabel()
         self.filter_edit = QLineEdit()
@@ -107,3 +108,40 @@ class LogcatWidget(QWidget):
 
         self.output_edit.setTextCursor(cursor)
         self.output_edit.ensureCursorVisible()
+
+    def start(self, adb_path: str, serial: str) -> None:
+        self._serial = serial
+        separator = "--- reconnected ---" if self._started_once else "--- started ---"
+        self._started_once = True
+        self._stop_process()
+        self._append_line(separator)
+        self._process = QProcess(self)
+        self._process.readyReadStandardOutput.connect(self._on_data)
+        self._process.finished.connect(self._on_process_finished)
+        self._process.start(adb_path, ["-s", serial, "logcat", "-v", "threadtime"])
+
+    def stop(self) -> None:
+        self._stop_process()
+        self._append_line("--- stopped ---")
+
+    def _stop_process(self) -> None:
+        if self._process is not None:
+            self._process.readyReadStandardOutput.disconnect()
+            self._process.finished.disconnect()
+            self._process.terminate()
+            if not self._process.waitForFinished(1000):
+                self._process.kill()
+            self._process = None
+
+    def _on_data(self) -> None:
+        if self._process is None:
+            return
+        raw = self._process.readAllStandardOutput().data()
+        text = raw.decode("utf-8", errors="replace")
+        for line in text.splitlines():
+            if line.strip():
+                self._append_line(line)
+
+    def _on_process_finished(self, exit_code: int, exit_status) -> None:
+        self._append_line("--- logcat disconnected ---")
+        self._process = None
