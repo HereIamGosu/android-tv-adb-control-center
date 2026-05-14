@@ -11,6 +11,7 @@ from app.ui.main_window import MainWindow
 
 def main() -> int:
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")
     store = SettingsStore()
     doc = store.load()
     if not doc.settings.adb_path:
