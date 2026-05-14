@@ -34,6 +34,7 @@ from app.ui.dialogs.settings_dialog import SettingsDialog
 from app.ui.dialogs.shell_window import ShellWindow
 from app.ui.widgets.command_log_widget import CommandLogWidget
 from app.ui.widgets.device_status_widget import DeviceStatusWidget
+from app.ui.widgets.logcat_widget import LogcatWidget
 from app.ui.widgets.remote_control_widget import RemoteControlWidget
 
 
@@ -80,7 +81,6 @@ TRANSLATIONS = {
         "screenshot": "Screenshot",
         "device_info": "Device Info",
         "open_shell": "Open Shell",
-        "start_logcat": "Start Logcat",
         "remote_control": "Remote control",
         "command_log": "Command log",
         "running": "Running: {operation}",
@@ -96,7 +96,6 @@ TRANSLATIONS = {
             "Check that Connect port is from the main Wireless Debugging screen, not from the pairing-code dialog."
         ),
         "install_confirm": "Install APK on the selected device?\n{path}",
-        "logcat_stub": "Logcat is still a stub button in this MVP build.",
         "ready": "Ready",
         "connected": "Connected",
         "offline": "Offline",
@@ -148,7 +147,6 @@ TRANSLATIONS = {
         "screenshot": "Скриншот",
         "device_info": "Информация",
         "open_shell": "Shell",
-        "start_logcat": "Logcat",
         "remote_control": "Пульт",
         "command_log": "Лог команд",
         "running": "Выполняется: {operation}",
@@ -164,7 +162,6 @@ TRANSLATIONS = {
             "Проверь, что Connect port взят с главного экрана Wireless Debugging, а не из окна pairing-code."
         ),
         "install_confirm": "Установить APK на выбранное устройство?\n{path}",
-        "logcat_stub": "Logcat пока оставлен stub-кнопкой в MVP.",
         "ready": "Готово",
         "connected": "Подключено",
         "offline": "Offline",
@@ -249,6 +246,11 @@ class MainWindow(QMainWindow):
         log_layout = QVBoxLayout(self.log_group)
         log_layout.addWidget(self.log_widget)
         right_column.addWidget(self.log_group, 1)
+        self.logcat_widget = LogcatWidget(self.settings.language)
+        self.logcat_group = QGroupBox()
+        logcat_layout = QVBoxLayout(self.logcat_group)
+        logcat_layout.addWidget(self.logcat_widget)
+        right_column.addWidget(self.logcat_group, 1)
 
     def _build_tool_status_group(self) -> QGroupBox:
         self.tool_status_group = QGroupBox()
@@ -368,7 +370,6 @@ class MainWindow(QMainWindow):
         self.screenshot_button = QPushButton()
         self.device_info_button = QPushButton()
         self.shell_button = QPushButton()
-        self.logcat_button = QPushButton()
         self.scrcpy_button.clicked.connect(self._launch_scrcpy)
         self.scrcpy_auto_button.clicked.connect(self._launch_scrcpy_auto)
         self.scrcpy_tcpip_button.clicked.connect(self._launch_scrcpy_tcpip)
@@ -376,11 +377,6 @@ class MainWindow(QMainWindow):
         self.screenshot_button.clicked.connect(self._screenshot)
         self.device_info_button.clicked.connect(self._device_info)
         self.shell_button.clicked.connect(self._open_shell)
-        self.logcat_button.clicked.connect(
-            lambda: QMessageBox.information(
-                self, "Logcat", self._t("logcat_stub")
-            )
-        )
         for button in (
             self.scrcpy_button,
             self.scrcpy_auto_button,
@@ -389,7 +385,6 @@ class MainWindow(QMainWindow):
             self.screenshot_button,
             self.device_info_button,
             self.shell_button,
-            self.logcat_button,
         ):
             layout.addWidget(button)
         layout.addStretch()
@@ -826,7 +821,6 @@ class MainWindow(QMainWindow):
             self.screenshot_button,
             self.device_info_button,
             self.shell_button,
-            self.logcat_button,
         ):
             button.setEnabled(adb_ready and can_use_device and not self.operation_running)
         self.scrcpy_button.setEnabled(scrcpy_ready and can_use_device and not self.operation_running)
@@ -889,13 +883,14 @@ class MainWindow(QMainWindow):
         self.screenshot_button.setText(self._t("screenshot"))
         self.device_info_button.setText(self._t("device_info"))
         self.shell_button.setText(self._t("open_shell"))
-        self.logcat_button.setText(self._t("start_logcat"))
 
         self.remote_widget.set_language(self.settings.language)
         self.remote_group.setTitle(self._t("remote_control"))
         self.device_status.set_language(self.settings.language)
         self.log_widget.set_language(self.settings.language)
         self.log_group.setTitle(self._t("command_log"))
+        self.logcat_group.setTitle(self._t("logcat"))
+        self.logcat_widget.set_language(self.settings.language)
 
     def _status(self, key: str) -> str:
         return self._t(key)
