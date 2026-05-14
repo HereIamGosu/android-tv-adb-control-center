@@ -1,0 +1,58 @@
+name: Build Windows
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Install build dependencies
+        run: python -m pip install -r requirements-build.txt
+
+      - name: Run tests
+        run: python -m pytest
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+      - name: Build executable
+        run: pyinstaller pyinstaller.spec --clean --noconfirm
+
+      - name: Smoke-check executable
+        shell: pwsh
+        run: |
+          $exe = "dist\AndroidTVADBControlCenter.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "Build output not found: $exe"
+            exit 1
+          }
+          $size = (Get-Item $exe).Length
+          Write-Host "exe size: $size bytes"
+          if ($size -lt 1MB) {
+            Write-Error "exe suspiciously small: $size bytes"
+            exit 1
+          }
+          Write-Host "Smoke-check passed."
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AndroidTVADBControlCenter-windows
+          path: dist\AndroidTVADBControlCenter.exe
+          retention-days: 14
