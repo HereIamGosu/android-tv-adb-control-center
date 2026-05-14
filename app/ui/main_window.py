@@ -830,6 +830,14 @@ class MainWindow(QMainWindow):
         self._operation_text = ""
         self._active_workers.discard(worker)
         self.operation_label.setText(self._t("failed"))
+        if self._monitoring_tick:
+            self._monitoring_tick = False
+            self._stop_monitor()
+            self.logcat_widget.stop()
+            self.device_connected = False
+            self.device_status.set_status(self._status("offline"), self.current_serial)
+            self._apply_enabled_state()
+            return
         self._apply_enabled_state()
         QMessageBox.critical(self, "Error", message)
 
