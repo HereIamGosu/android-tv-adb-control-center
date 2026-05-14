@@ -10,6 +10,7 @@
 [![ADB](https://img.shields.io/badge/ADB-Platform%20Tools-3DDC84?logo=android&logoColor=white)](https://developer.android.com/tools/adb)
 [![scrcpy](https://img.shields.io/badge/scrcpy-supported-111111)](https://github.com/Genymobile/scrcpy)
 [![Tests](https://img.shields.io/badge/tests-pytest-0A7BBB)](#development)
+[![Download](https://img.shields.io/github/downloads/HereIamGosu/android-tv-adb-control-center/latest/total?label=Download%20.exe&color=brightgreen)](https://github.com/HereIamGosu/android-tv-adb-control-center/releases/download/latest/AndroidTVADBControlCenter.exe)
 
 **Android TV ADB GUI** · **Google TV Wireless Debugging Tool** · **scrcpy launcher for TV** · **APK installer for Android TV**
 
@@ -69,6 +70,14 @@ Built for:
 - [Development](#development)
 - [Roadmap](#roadmap)
 - [Credits](#credits)
+
+## Download
+
+> **[⬇ Download AndroidTVADBControlCenter.exe](https://github.com/HereIamGosu/android-tv-adb-control-center/releases/download/latest/AndroidTVADBControlCenter.exe)**
+>
+> Windows 10 / 11 · No installation required · Built automatically from the latest commit
+
+---
 
 ## Quick Start
 
