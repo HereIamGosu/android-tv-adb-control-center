@@ -56,3 +56,42 @@ jobs:
           name: AndroidTVADBControlCenter-windows
           path: dist\AndroidTVADBControlCenter.exe
           retention-days: 14
+
+  release:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: AndroidTVADBControlCenter-windows
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          CHANGELOG=$(git log --oneline HEAD~10..HEAD 2>/dev/null || git log --oneline)
+          echo "CHANGELOG<<EOF" >> $GITHUB_ENV
+          echo "$CHANGELOG" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Delete existing latest release
+        run: gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create latest release
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          gh release create latest AndroidTVADBControlCenter.exe \
+            --title "Latest Build ($DATE)" \
+            --notes "$CHANGELOG" \
+            --prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
