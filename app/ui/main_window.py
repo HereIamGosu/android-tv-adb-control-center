@@ -842,6 +842,8 @@ class MainWindow(QMainWindow):
         QMessageBox.critical(self, "Error", message)
 
     def closeEvent(self, event) -> None:
+        self._stop_monitor()
+        self.logcat_widget.stop()
         if self._active_workers:
             self.thread_pool.waitForDone(5000)
             self._active_workers.clear()
